@@ -1,0 +1,30 @@
+# Dependencias
+node_modules/
+.pnp/
+.pnp.js
+
+# Build
+.next/
+out/
+build/
+dist/
+
+# Entorno — nunca subir llaves ni credenciales
+.env
+.env.local
+.env*.local
+
+# Herramientas de sesión (maquetas locales del brainstorming)
+.superpowers/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
