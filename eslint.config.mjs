@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generados por la CLI de Supabase y por Playwright: no son código nuestro.
+    "supabase/.temp/**",
+    "test-results/**",
+    "playwright-report/**",
   ]),
 ]);
 

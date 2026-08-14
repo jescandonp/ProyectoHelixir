@@ -10,7 +10,10 @@ import { GrillaSabores } from '@/components/pedido/GrillaSabores'
 import { ResumenPedido } from '@/components/pedido/ResumenPedido'
 import { calcularTotales } from '@/lib/pedidos/calculos'
 import { validarParaConfirmar } from '@/lib/pedidos/validacion'
-import { crearBorrador, guardarBorrador, confirmarPedido } from '@/lib/db/pedidos'
+import {
+  crearBorrador, guardarBorrador, confirmarPedido, listarPedidosDeHoyDelCliente,
+} from '@/lib/db/pedidos'
+import { buscarDuplicado, type PedidoReciente } from '@/lib/pedidos/duplicados'
 import type {
   Cliente, Direccion, ItemPedido, Producto, TipoEntrega, EstadoPago,
 } from '@/lib/tipos'
@@ -51,7 +54,30 @@ export function FormularioPedido({ productos, valorDomicilioDefault }: Props) {
     transportadora: transportadora || null,
   })
 
-  // Restaurar al entrar
+  // Se guarda de qué cliente son los pedidos: si se cambia de cliente, la
+  // respuesta anterior no puede quedar avisando de un duplicado ajeno.
+  const [recientes, setRecientes] = useState<
+    { clienteId: string; pedidos: PedidoReciente[] } | null
+  >(null)
+
+  useEffect(() => {
+    if (!cliente) return
+    const clienteId = cliente.id
+    let vigente = true
+    listarPedidosDeHoyDelCliente(clienteId).then((pedidos) => {
+      if (vigente) setRecientes({ clienteId, pedidos })
+    })
+    return () => { vigente = false }
+  }, [cliente])
+
+  const duplicado = cliente && recientes?.clienteId === cliente.id
+    ? buscarDuplicado(recientes.pedidos, totales.total)
+    : null
+
+  // Restaurar al entrar. El estado guardado solo existe en el navegador, así
+  // que no puede leerse durante el render: el servidor pintaría una pantalla
+  // vacía y el cliente otra distinta, y la hidratación fallaría.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const guardado = leerBorradorLocal()
     if (!guardado) return
@@ -64,6 +90,7 @@ export function FormularioPedido({ productos, valorDomicilioDefault }: Props) {
     setValorDomicilio(guardado.valorDomicilio)
     setObservaciones(guardado.observaciones)
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Guardar en cada cambio, sin ir a la red
   useEffect(() => {
@@ -184,6 +211,12 @@ export function FormularioPedido({ productos, valorDomicilioDefault }: Props) {
         </div>
 
         <div className="flex-1">
+          {duplicado && (
+            <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Ojo: este cliente ya tiene hoy el pedido <strong>{duplicado.consecutivo}</strong> por
+              el mismo valor. Si son dos pedidos distintos, sigue sin problema.
+            </div>
+          )}
           <ResumenPedido
             items={items} totales={totales} valorDomicilio={valorDomicilio}
             tipoEntrega={tipoEntrega} transportadora={transportadora}
