@@ -2,6 +2,7 @@ import type { PedidoCompleto } from '@/lib/db/pedidos'
 import type { Ajustes } from '@/lib/db/ajustes'
 import { formatearPesos } from '@/lib/dinero'
 import { valorEnLetras } from '@/lib/numero-a-letras'
+import { formatearFechaCo } from '@/lib/fecha'
 
 /** La cédula se muestra parcial: es el recibo del propio cliente,
  *  pero el papel puede quedar a la vista de terceros. */
@@ -10,13 +11,6 @@ function enmascararCedula(cedula: string | null): string {
   const limpia = cedula.replace(/\D/g, '')
   if (limpia.length <= 4) return limpia
   return `${limpia.slice(0, 4)}${'x'.repeat(limpia.length - 4)}`
-}
-
-function formatearFecha(iso: string): string {
-  return new Date(iso).toLocaleString('es-CO', {
-    day: '2-digit', month: '2-digit', year: '2-digit',
-    hour: 'numeric', minute: '2-digit', hour12: true,
-  })
 }
 
 export function Recibo({ pedido, ajustes }: { pedido: PedidoCompleto; ajustes: Ajustes }) {
@@ -41,7 +35,7 @@ export function Recibo({ pedido, ajustes }: { pedido: PedidoCompleto; ajustes: A
 
       <div className="grid grid-cols-[74px_1fr] gap-y-0.5 text-[13.5px] leading-tight">
         <div className="font-extrabold">Cliente:</div><div>{pedido.clienteNombre}</div>
-        <div className="font-extrabold">Fecha:</div><div>{formatearFecha(pedido.fecha)}</div>
+        <div className="font-extrabold">Fecha:</div><div>{formatearFechaCo(pedido.fecha)}</div>
         <div className="font-extrabold">Cédula:</div><div>{enmascararCedula(pedido.clienteCedula)}</div>
         <div className="font-extrabold">Teléfono:</div><div>{pedido.clienteTelefono ?? '—'}</div>
         <div className="font-extrabold">Asesor:</div><div>{pedido.asesorCodigo ?? '—'}</div>
@@ -121,7 +115,7 @@ export function Recibo({ pedido, ajustes }: { pedido: PedidoCompleto; ajustes: A
         {pagado ? (
           <>
             <strong className="text-[13.5px] tracking-wide">PAGADO ✓</strong>
-            {pedido.fechaPago && <div>{formatearFecha(pedido.fechaPago)}</div>}
+            {pedido.fechaPago && <div>{formatearFechaCo(pedido.fechaPago)}</div>}
           </>
         ) : (
           <>
