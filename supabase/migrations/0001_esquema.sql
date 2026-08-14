@@ -66,7 +66,10 @@ create table pedidos (
   consecutivo text unique,
   fecha timestamptz not null default now(),
 
-  cliente_id uuid not null references clientes(id),
+  -- nulo mientras es borrador: el pedido se guarda solo desde el primer
+  -- momento, antes de que se haya escogido el cliente. Que un pedido
+  -- confirmado sí tenga cliente lo garantiza `validarParaConfirmar`.
+  cliente_id uuid references clientes(id),
   direccion_id uuid references direcciones(id),
 
   -- copia congelada: un cambio futuro en la ficha del cliente

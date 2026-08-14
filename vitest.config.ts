@@ -8,6 +8,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['src/**/*.test.{ts,tsx}'],
+    exclude: ['**/node_modules/**', 'src/**/*.integracion.test.ts'],
     // pool 'threads': el pool 'forks' (por defecto en Vitest 4) hace timeout
     // al iniciar el worker en este entorno Windows/sandbox. 'threads' funciona
     // de forma estable. Ver reporte de la Tarea 1 para el diagnóstico completo.
