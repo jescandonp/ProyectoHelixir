@@ -1,3 +1,5 @@
+'use server'
+
 import { crearClienteServidor } from './cliente-supabase'
 
 export interface Ajustes {
@@ -30,4 +32,25 @@ export async function obtenerAjustes(): Promise<Ajustes> {
     etiquetaAltoMm: data.etiqueta_alto_mm,
     pieRecibo: data.pie_recibo,
   }
+}
+
+export async function guardarAjustes(ajustes: Ajustes): Promise<void> {
+  const supabase = await crearClienteServidor()
+  const { error } = await supabase
+    .from('ajustes')
+    .update({
+      nombre_negocio: ajustes.nombreNegocio,
+      eslogan: ajustes.eslogan,
+      logo_url: ajustes.logoUrl,
+      telefonos: ajustes.telefonos,
+      datos_pago: ajustes.datosPago,
+      prefijo_consecutivo: ajustes.prefijoConsecutivo,
+      valor_domicilio_default: ajustes.valorDomicilioDefault,
+      etiqueta_ancho_mm: ajustes.etiquetaAnchoMm,
+      etiqueta_alto_mm: ajustes.etiquetaAltoMm,
+      pie_recibo: ajustes.pieRecibo,
+    })
+    .eq('id', true)
+
+  if (error) throw new Error(`No se pudieron guardar los ajustes: ${error.message}`)
 }
