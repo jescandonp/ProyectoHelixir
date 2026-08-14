@@ -16,6 +16,10 @@ const eslintConfig = defineConfig([
     "supabase/.temp/**",
     "test-results/**",
     "playwright-report/**",
+    // Worktrees de Claude Code: son copias completas del proyecto, con su
+    // propio node_modules. Sin esto, `npm run lint` desde la raíz revisa
+    // el repo dos veces y saca miles de errores ajenos.
+    ".claude/**",
   ]),
 ]);
 
