@@ -40,3 +40,7 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generados por next dev — no son instrucciones del proyecto
+AGENTS.md
+CLAUDE.md
