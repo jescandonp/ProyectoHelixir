@@ -1,7 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import {
+  guardarBorradorLocal, leerBorradorLocal, limpiarBorradorLocal,
+} from '@/lib/pedidos/borrador-local'
 import { BuscadorCliente } from '@/components/pedido/BuscadorCliente'
 import { GrillaSabores } from '@/components/pedido/GrillaSabores'
 import { ResumenPedido } from '@/components/pedido/ResumenPedido'
@@ -47,6 +50,31 @@ export function FormularioPedido({ productos, valorDomicilioDefault }: Props) {
     items, tipoEntrega,
     transportadora: transportadora || null,
   })
+
+  // Restaurar al entrar
+  useEffect(() => {
+    const guardado = leerBorradorLocal()
+    if (!guardado) return
+    setCliente(guardado.cliente)
+    setDireccion(guardado.direccion)
+    setItems(guardado.items)
+    setTipoEntrega(guardado.tipoEntrega)
+    setTransportadora(guardado.transportadora)
+    setEstadoPago(guardado.estadoPago)
+    setValorDomicilio(guardado.valorDomicilio)
+    setObservaciones(guardado.observaciones)
+  }, [])
+
+  // Guardar en cada cambio, sin ir a la red
+  useEffect(() => {
+    if (!cliente && items.length === 0) return
+    guardarBorradorLocal({
+      cliente, direccion, items, tipoEntrega, transportadora,
+      estadoPago, valorDomicilio, observaciones,
+      guardadoEn: new Date().toISOString(),
+    })
+  }, [cliente, direccion, items, tipoEntrega, transportadora,
+      estadoPago, valorDomicilio, observaciones])
 
   function escogerCliente(nuevo: Cliente) {
     setCliente(nuevo)
@@ -97,6 +125,7 @@ export function FormularioPedido({ productos, valorDomicilioDefault }: Props) {
         estadoPago, valorDomicilio, descuento: 0, observaciones,
       })
       await confirmarPedido(id)
+      limpiarBorradorLocal()
       router.push(`/pedidos/${id}/documentos`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo confirmar el pedido')
