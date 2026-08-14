@@ -28,3 +28,25 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cobertura de pruebas
+/coverage
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Generados por next dev — no son instrucciones del proyecto
+AGENTS.md
+CLAUDE.md
+
+# Playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
