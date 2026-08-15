@@ -13,35 +13,54 @@ async function crearPedidoDePrueba(clienteId: string): Promise<string> {
   return data.id
 }
 
+// Borra primero los pedidos del cliente y luego el cliente: `pedidos.cliente_id`
+// no lleva `on delete cascade` (a propósito, para no perder historial de ventas
+// si algún día se borra un cliente por error), así que borrar el cliente
+// primero deja los pedidos huérfanos en la base. Se comprueba el error de
+// cada borrado porque una limpieza que falla en silencio no limpia nada y
+// nadie se entera.
+async function limpiarClienteDePrueba(clienteId: string): Promise<void> {
+  const { error: errorPedidos } = await supabase.from('pedidos').delete().eq('cliente_id', clienteId)
+  if (errorPedidos) throw new Error(`No se pudieron limpiar los pedidos de prueba: ${errorPedidos.message}`)
+
+  const { error: errorCliente } = await supabase.from('clientes').delete().eq('id', clienteId)
+  if (errorCliente) throw new Error(`No se pudo limpiar el cliente de prueba: ${errorCliente.message}`)
+}
+
 describe('asignar_consecutivo', () => {
   it('no repite números aunque se pidan al mismo tiempo', async () => {
     const { data: cliente } = await supabase
       .from('clientes').insert({ nombre: 'Prueba concurrencia' }).select('id').single()
 
-    const ids = await Promise.all(
-      Array.from({ length: 10 }, () => crearPedidoDePrueba(cliente!.id)),
-    )
+    try {
+      const ids = await Promise.all(
+        Array.from({ length: 10 }, () => crearPedidoDePrueba(cliente!.id)),
+      )
 
-    const resultados = await Promise.all(
-      ids.map((id) => supabase.rpc('asignar_consecutivo', { p_pedido_id: id })),
-    )
+      const resultados = await Promise.all(
+        ids.map((id) => supabase.rpc('asignar_consecutivo', { p_pedido_id: id })),
+      )
 
-    const consecutivos = resultados.map((r) => r.data as string)
-    expect(new Set(consecutivos).size).toBe(10)
-
-    await supabase.from('clientes').delete().eq('id', cliente!.id)
+      const consecutivos = resultados.map((r) => r.data as string)
+      expect(new Set(consecutivos).size).toBe(10)
+    } finally {
+      await limpiarClienteDePrueba(cliente!.id)
+    }
   }, 30000)
 
   it('es idempotente: pedirlo dos veces devuelve el mismo número', async () => {
     const { data: cliente } = await supabase
       .from('clientes').insert({ nombre: 'Prueba idempotencia' }).select('id').single()
-    const id = await crearPedidoDePrueba(cliente!.id)
 
-    const primera = await supabase.rpc('asignar_consecutivo', { p_pedido_id: id })
-    const segunda = await supabase.rpc('asignar_consecutivo', { p_pedido_id: id })
+    try {
+      const id = await crearPedidoDePrueba(cliente!.id)
 
-    expect(segunda.data).toBe(primera.data)
+      const primera = await supabase.rpc('asignar_consecutivo', { p_pedido_id: id })
+      const segunda = await supabase.rpc('asignar_consecutivo', { p_pedido_id: id })
 
-    await supabase.from('clientes').delete().eq('id', cliente!.id)
+      expect(segunda.data).toBe(primera.data)
+    } finally {
+      await limpiarClienteDePrueba(cliente!.id)
+    }
   }, 30000)
 })

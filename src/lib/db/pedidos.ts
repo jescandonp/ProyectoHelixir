@@ -236,7 +236,14 @@ export async function anularPedido(id: string, motivo: string): Promise<void> {
   }
 
   const usuario = await obtenerUsuarioActual()
-  const { error } = await supabase
+  // Igual que en `cambiarEstado`: la guarda va también en el `WHERE`, no
+  // solo en la lectura previa. Sin `.eq('estado', pedido.estado)`, si otra
+  // sesión marca el pedido como entregado entre el `select` y este
+  // `update`, este `update` no lo sabe y lo anula igual: un pedido ya
+  // entregado quedaría anulado, y `anulado` no tiene transición de salida
+  // (ver TRANSICIONES en estados.ts), así que recuperarlo exigiría entrar
+  // a la base a mano.
+  const { data: actualizados, error } = await supabase
     .from('pedidos')
     .update({
       estado: 'anulado',
@@ -245,25 +252,85 @@ export async function anularPedido(id: string, motivo: string): Promise<void> {
       anulado_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('estado', pedido.estado)
+    .select('id')
 
   if (error) throw new Error(`No se pudo anular: ${error.message}`)
+  if (!actualizados || actualizados.length === 0) {
+    throw new Error('No se pudo anular: otra sesión cambió el estado de este pedido mientras tanto. Recarga la página e intenta de nuevo.')
+  }
 }
 
-export async function listarPedidosDeHoyDelCliente(
-  clienteId: string,
-): Promise<{ consecutivo: string; total: number }[]> {
+/** Idempotente: cobrar dos veces, o dos personas a la vez, no reescriben
+ *  la fecha del primer cobro. La guarda va en el `update`, no solo en la
+ *  lectura previa, porque entre leer y escribir cabe otra sesión. */
+export async function marcarPagado(id: string, metodo?: string): Promise<void> {
   const supabase = await crearClienteServidor()
-  const inicioDelDia = new Date()
-  inicioDelDia.setHours(0, 0, 0, 0)
 
-  const { data } = await supabase
+  const { data: pedido } = await supabase
+    .from('pedidos').select('estado, estado_pago').eq('id', id).single()
+  if (!pedido) throw new Error('No se encontró el pedido')
+  if (pedido.estado === 'anulado') throw new Error('Un pedido anulado no se puede cobrar')
+  if (pedido.estado_pago === 'pagado') return
+
+  const { data: actualizados, error } = await supabase
     .from('pedidos')
-    .select('consecutivo, total')
-    .eq('cliente_id', clienteId)
+    .update({
+      estado_pago: 'pagado',
+      fecha_pago: new Date().toISOString(),
+      metodo_pago: metodo?.trim() || null,
+    })
+    .eq('id', id)
+    .neq('estado_pago', 'pagado')
     .neq('estado', 'anulado')
-    .not('consecutivo', 'is', null)
-    .gte('fecha', inicioDelDia.toISOString())
+    .select('id')
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data ?? []).map((p: any) => ({ consecutivo: p.consecutivo, total: p.total }))
+  if (error) throw new Error(`No se pudo marcar pagado: ${error.message}`)
+  if (!actualizados || actualizados.length === 0) {
+    // 0 filas no dice por sí solo cuál de las dos guardas bloqueó el update
+    // (`estado_pago != 'pagado'` o `estado != 'anulado'`), así que hay que
+    // releer el pedido para distinguir entre las dos causas posibles:
+    // que ya lo haya cobrado otra sesión (idempotencia, sin error) o que
+    // otra sesión lo haya anulado mientras tanto (error real).
+    const { data: actual } = await supabase
+      .from('pedidos').select('estado, estado_pago').eq('id', id).single()
+
+    if (actual?.estado_pago === 'pagado') return
+    if (actual?.estado === 'anulado') {
+      throw new Error('No se pudo cobrar: otra sesión anuló este pedido mientras tanto. Recarga la página.')
+    }
+    throw new Error('No se pudo cobrar el pedido. Recarga la página e intenta de nuevo.')
+  }
+}
+
+async function cambiarEstado(id: string, hacia: EstadoPedido): Promise<void> {
+  const supabase = await crearClienteServidor()
+
+  const { data: pedido } = await supabase
+    .from('pedidos').select('estado').eq('id', id).single()
+  if (!pedido) throw new Error('No se encontró el pedido')
+
+  if (!puedeTransicionar(pedido.estado, hacia)) {
+    throw new Error(`Un pedido en estado "${pedido.estado}" no se puede marcar como "${hacia}"`)
+  }
+
+  const { data: actualizados, error } = await supabase
+    .from('pedidos')
+    .update({ estado: hacia })
+    .eq('id', id)
+    .eq('estado', pedido.estado)   // si otro lo movió mientras tanto, no pisa
+    .select('id')
+
+  if (error) throw new Error(`No se pudo cambiar el estado: ${error.message}`)
+  if (!actualizados || actualizados.length === 0) {
+    throw new Error(`No se pudo marcar como "${hacia}": otra sesión ya cambió el estado de este pedido. Recarga la página e intenta de nuevo.`)
+  }
+}
+
+export async function marcarEnviado(id: string): Promise<void> {
+  return cambiarEstado(id, 'enviado')
+}
+
+export async function marcarEntregado(id: string): Promise<void> {
+  return cambiarEstado(id, 'entregado')
 }

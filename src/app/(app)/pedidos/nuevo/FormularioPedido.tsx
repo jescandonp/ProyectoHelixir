@@ -10,9 +10,8 @@ import { GrillaSabores } from '@/components/pedido/GrillaSabores'
 import { ResumenPedido } from '@/components/pedido/ResumenPedido'
 import { calcularTotales } from '@/lib/pedidos/calculos'
 import { validarParaConfirmar } from '@/lib/pedidos/validacion'
-import {
-  crearBorrador, guardarBorrador, confirmarPedido, listarPedidosDeHoyDelCliente,
-} from '@/lib/db/pedidos'
+import { crearBorrador, guardarBorrador, confirmarPedido } from '@/lib/db/pedidos'
+import { listarPedidosDeHoyDelCliente } from '@/lib/db/pedidos-consultas'
 import { buscarDuplicado, type PedidoReciente } from '@/lib/pedidos/duplicados'
 import type {
   Cliente, Direccion, ItemPedido, Producto, TipoEntrega, EstadoPago,
