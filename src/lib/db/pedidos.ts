@@ -248,3 +248,56 @@ export async function anularPedido(id: string, motivo: string): Promise<void> {
 
   if (error) throw new Error(`No se pudo anular: ${error.message}`)
 }
+
+/** Idempotente: cobrar dos veces, o dos personas a la vez, no reescriben
+ *  la fecha del primer cobro. La guarda va en el `update`, no solo en la
+ *  lectura previa, porque entre leer y escribir cabe otra sesión. */
+export async function marcarPagado(id: string, metodo?: string): Promise<void> {
+  const supabase = await crearClienteServidor()
+
+  const { data: pedido } = await supabase
+    .from('pedidos').select('estado, estado_pago').eq('id', id).single()
+  if (!pedido) throw new Error('No se encontró el pedido')
+  if (pedido.estado === 'anulado') throw new Error('Un pedido anulado no se puede cobrar')
+  if (pedido.estado_pago === 'pagado') return
+
+  const { error } = await supabase
+    .from('pedidos')
+    .update({
+      estado_pago: 'pagado',
+      fecha_pago: new Date().toISOString(),
+      metodo_pago: metodo?.trim() || null,
+    })
+    .eq('id', id)
+    .neq('estado_pago', 'pagado')
+
+  if (error) throw new Error(`No se pudo marcar pagado: ${error.message}`)
+}
+
+async function cambiarEstado(id: string, hacia: EstadoPedido): Promise<void> {
+  const supabase = await crearClienteServidor()
+
+  const { data: pedido } = await supabase
+    .from('pedidos').select('estado').eq('id', id).single()
+  if (!pedido) throw new Error('No se encontró el pedido')
+
+  if (!puedeTransicionar(pedido.estado, hacia)) {
+    throw new Error(`Un pedido en estado "${pedido.estado}" no se puede marcar como "${hacia}"`)
+  }
+
+  const { error } = await supabase
+    .from('pedidos')
+    .update({ estado: hacia })
+    .eq('id', id)
+    .eq('estado', pedido.estado)   // si otro lo movió mientras tanto, no pisa
+
+  if (error) throw new Error(`No se pudo cambiar el estado: ${error.message}`)
+}
+
+export async function marcarEnviado(id: string): Promise<void> {
+  return cambiarEstado(id, 'enviado')
+}
+
+export async function marcarEntregado(id: string): Promise<void> {
+  return cambiarEstado(id, 'entregado')
+}
