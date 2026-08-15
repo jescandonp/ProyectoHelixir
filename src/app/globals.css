@@ -12,12 +12,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* La app se compromete a propósito con tema claro: es una herramienta de
+   mostrador cuyo producto impreso (recibo y rótulo) es negro sobre blanco,
+   y todas las superficies (bg-white, bg-slate-50, bg-slate-100, etc.) ya
+   están fijas en claro. No añadas aquí un bloque
+   `@media (prefers-color-scheme: dark)` que solo cambie estas variables:
+   como las superficies no cambian con él, el texto queda claro sobre
+   fondos claros y se vuelve ilegible con el sistema operativo en oscuro. */
 
 body {
   background: var(--background);
