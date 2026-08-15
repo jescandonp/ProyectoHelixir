@@ -42,12 +42,17 @@ export function FichaCliente({
   const [editandoDireccion, setEditandoDireccion] = useState<string | null>(null)
   const [formDireccion, setFormDireccion] = useState<DatosDireccion>(DIRECCION_VACIA)
 
-  function ejecutar(accion: () => Promise<void>, exito: string) {
+  // alExito solo corre si la acción terminó bien: así quien cierra un
+  // formulario (por ejemplo, el de dirección) lo hace después de confirmar
+  // que se guardó, no antes. Si la acción falla, el formulario debe seguir
+  // abierto con lo que el usuario escribió, para no perder lo digitado.
+  function ejecutar(accion: () => Promise<void>, exito: string, alExito?: () => void) {
     setError(null); setMensaje(null)
     iniciar(async () => {
       try {
         await accion()
         setMensaje(exito)
+        alExito?.()
         router.refresh()
       } catch (e) {
         setError(e instanceof Error ? e.message : 'No se pudo guardar')
@@ -55,9 +60,26 @@ export function FichaCliente({
     })
   }
 
+  // Cambia los datos del cliente y limpia cualquier aviso de éxito o error
+  // vigente: un "Guardado" que quedó en pantalla de un guardado anterior no
+  // debe seguir mostrándose junto a un campo que el usuario ya modificó y
+  // que todavía no se ha persistido.
+  function cambiarDatos(cambios: Partial<typeof datos>) {
+    setDatos((prev) => ({ ...prev, ...cambios }))
+    setMensaje(null)
+    setError(null)
+  }
+
   function enmascarar(cedula: string): string {
     if (!cedula) return '—'
-    return `${cedula.slice(0, 4)}${'x'.repeat(Math.max(0, cedula.length - 4))}`
+    // No se puede confiar en que la cédula tenga más de 4 caracteres: con
+    // slice(0, 4) una cédula de longitud 4 o menos se devuelve completa y
+    // no queda ningún caracter para reemplazar por "x". Por eso mostramos
+    // como máximo los primeros 4 caracteres, pero nunca más de los que
+    // dejen al menos uno enmascarado, para que jamás se vea el valor
+    // completo sin haber pulsado "revelar".
+    const visibles = Math.min(4, Math.max(0, cedula.length - 1))
+    return `${cedula.slice(0, visibles)}${'x'.repeat(cedula.length - visibles)}`
   }
 
   return (
@@ -74,12 +96,12 @@ export function FichaCliente({
         <div className="grid gap-2 sm:grid-cols-2">
           <label className="block">
             <span className="text-xs text-slate-500">Nombre</span>
-            <input value={datos.nombre} onChange={(e) => setDatos({ ...datos, nombre: e.target.value })}
+            <input value={datos.nombre} onChange={(e) => cambiarDatos({ nombre: e.target.value })}
               className="mt-1 w-full rounded border px-2 py-1.5 text-sm" />
           </label>
           <label className="block">
             <span className="text-xs text-slate-500">Teléfono</span>
-            <input value={datos.telefono} onChange={(e) => setDatos({ ...datos, telefono: e.target.value })}
+            <input value={datos.telefono} onChange={(e) => cambiarDatos({ telefono: e.target.value })}
               className="mt-1 w-full rounded border px-2 py-1.5 text-sm" />
           </label>
           <label className="block">
@@ -91,7 +113,7 @@ export function FichaCliente({
               </button>
             </span>
             {cedulaVisible ? (
-              <input value={datos.cedula} onChange={(e) => setDatos({ ...datos, cedula: e.target.value })}
+              <input value={datos.cedula} onChange={(e) => cambiarDatos({ cedula: e.target.value })}
                 className="mt-1 w-full rounded border px-2 py-1.5 text-sm" />
             ) : (
               <p className="mt-1 rounded border bg-slate-50 px-2 py-1.5 text-sm tabular-nums">
@@ -102,7 +124,7 @@ export function FichaCliente({
           <label className="block">
             <span className="text-xs text-slate-500">Tipo</span>
             <select value={datos.tipo}
-              onChange={(e) => setDatos({ ...datos, tipo: e.target.value as Cliente['tipo'] })}
+              onChange={(e) => cambiarDatos({ tipo: e.target.value as Cliente['tipo'] })}
               className="mt-1 w-full rounded border px-2 py-1.5 text-sm">
               <option value="detal">Detal</option>
               <option value="mayorista">Mayorista</option>
@@ -112,7 +134,7 @@ export function FichaCliente({
         <label className="mt-2 block">
           <span className="text-xs text-slate-500">Notas</span>
           <textarea value={datos.notas} rows={2}
-            onChange={(e) => setDatos({ ...datos, notas: e.target.value })}
+            onChange={(e) => cambiarDatos({ notas: e.target.value })}
             className="mt-1 w-full rounded border px-2 py-1.5 text-sm" />
         </label>
         <button type="button" disabled={pendiente}
@@ -129,10 +151,11 @@ export function FichaCliente({
             {editandoDireccion === d.id ? (
               <CamposDireccion
                 valores={formDireccion} onCambiar={setFormDireccion}
-                onGuardar={() => {
-                  ejecutar(() => actualizarDireccion(d.id, formDireccion), 'Dirección guardada')
-                  setEditandoDireccion(null)
-                }}
+                onGuardar={() => ejecutar(
+                  () => actualizarDireccion(d.id, formDireccion),
+                  'Dirección guardada',
+                  () => setEditandoDireccion(null),
+                )}
                 onCancelar={() => setEditandoDireccion(null)}
                 pendiente={pendiente}
               />
@@ -173,10 +196,11 @@ export function FichaCliente({
           <div className="rounded border border-emerald-300 bg-emerald-50 p-2">
             <CamposDireccion
               valores={formDireccion} onCambiar={setFormDireccion}
-              onGuardar={() => {
-                ejecutar(() => agregarDireccion(cliente.id, formDireccion), 'Dirección agregada')
-                setEditandoDireccion(null)
-              }}
+              onGuardar={() => ejecutar(
+                () => agregarDireccion(cliente.id, formDireccion),
+                'Dirección agregada',
+                () => setEditandoDireccion(null),
+              )}
               onCancelar={() => setEditandoDireccion(null)}
               pendiente={pendiente}
             />
