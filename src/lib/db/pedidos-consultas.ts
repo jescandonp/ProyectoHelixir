@@ -3,7 +3,7 @@
 import { crearClienteServidor } from './cliente-supabase'
 import { filtrarPedidosReales } from './filtros-pedidos'
 import { POR_PAGINA } from './paginacion'
-import type { Rango } from '@/lib/periodo'
+import { rangoDelDia, type Rango } from '@/lib/periodo'
 import type { EstadoPedido, EstadoPago } from '@/lib/tipos'
 
 const COLUMNAS =
@@ -150,8 +150,11 @@ export async function listarPedidosDeHoyDelCliente(
   clienteId: string,
 ): Promise<{ consecutivo: string; total: number }[]> {
   const supabase = await crearClienteServidor()
-  const inicioDelDia = new Date()
-  inicioDelDia.setHours(0, 0, 0, 0)
+  // `rangoDelDia()` usa el día civil en Bogotá, no la zona del servidor.
+  // Con `new Date().setHours(0,0,0,0)` a mano, en Vercel (UTC) la
+  // medianoche caía a las 7 p.m. de ayer en Bogotá: un cliente que pidió
+  // anoche disparaba una alerta falsa de posible duplicado hoy.
+  const { desde } = rangoDelDia()
 
   // Un borrador —el mismo formulario que se está llenando, u otro
   // abandonado— no es un pedido puesto y no debe disparar el aviso de
@@ -160,7 +163,7 @@ export async function listarPedidosDeHoyDelCliente(
     supabase.from('pedidos').select('consecutivo, total').eq('cliente_id', clienteId),
   )
     .neq('estado', 'anulado')
-    .gte('fecha', inicioDelDia.toISOString())
+    .gte('fecha', desde)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data ?? []).map((p: any) => ({ consecutivo: p.consecutivo, total: p.total }))

@@ -9,11 +9,19 @@ const PESTANAS = [
 ]
 
 const ESTADOS = ['confirmado', 'enviado', 'entregado', 'anulado']
+const ESTADOS_PAGO = ['pendiente', 'contraentrega', 'pagado']
 
 export function FiltrosPedidos() {
   const router = useRouter()
   const params = useSearchParams()
   const pestanaActual = params.get('pestana') ?? 'hoy'
+
+  // En la pestaña "Por cobrar" la lista ya excluye lo pagado (`soloPorCobrar`
+  // en pedidos-consultas.ts); ofrecer "pagado" ahí daría una lista vacía sin
+  // explicación, así que se saca del desplegable mientras esa pestaña esté activa.
+  const estadosPagoDisponibles = pestanaActual === 'porcobrar'
+    ? ESTADOS_PAGO.filter((e) => e !== 'pagado')
+    : ESTADOS_PAGO
 
   function cambiar(clave: string, valor: string) {
     const nuevos = new URLSearchParams(params.toString())
@@ -74,7 +82,20 @@ export function FiltrosPedidos() {
           <option value="">Todos los estados</option>
           {ESTADOS.map((e) => <option key={e} value={e}>{e}</option>)}
         </select>
+        <select
+          value={params.get('estadoPago') ?? ''}
+          onChange={(e) => cambiar('estadoPago', e.target.value)}
+          className="rounded border px-2 py-1"
+        >
+          <option value="">Todo el estado de pago</option>
+          {estadosPagoDisponibles.map((e) => <option key={e} value={e}>{e}</option>)}
+        </select>
       </div>
     </div>
   )
 }
+
+// `clienteId` y `asesorId` son filtros de `listarPedidos` que esta pantalla
+// no expone con un control: llegan solo por URL, para que otras pantallas
+// (ficha del cliente, panel del asesor) enlacen aquí ya filtrado. No están
+// olvidados — no tienen un desplegable a propósito.

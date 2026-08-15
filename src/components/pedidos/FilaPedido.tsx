@@ -30,6 +30,12 @@ export function FilaPedido({ pedido }: { pedido: Datos }) {
       } catch (e) {
         // El error sale en la fila: el listado no se pierde y se reintenta.
         setError(e instanceof Error ? e.message : 'No se pudo completar la acción')
+        // Cuando la acción falla porque otra sesión ya cambió el pedido,
+        // la fila queda mostrando el estado viejo. `router.refresh()` la
+        // trae al día sola, sin obligar al usuario a recargar a mano en
+        // la pantalla del dinero. El mensaje de error vive en estado
+        // local (`setError` arriba), así que sobrevive al refresh.
+        router.refresh()
       }
     })
   }

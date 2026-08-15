@@ -5,7 +5,15 @@ import { formatearPesos } from '@/lib/dinero'
 import { FiltrosPedidos } from '@/components/pedidos/FiltrosPedidos'
 import { FilaPedido } from '@/components/pedidos/FilaPedido'
 import { Paginacion } from '@/components/Paginacion'
-import type { EstadoPedido } from '@/lib/tipos'
+import type { EstadoPedido, EstadoPago } from '@/lib/tipos'
+
+const ESTADOS_PAGO: EstadoPago[] = ['pendiente', 'contraentrega', 'pagado']
+
+/** Un valor fuera de esta lista (URL retocada a mano) se ignora en vez de
+ *  romper la pantalla, igual que ya hace `fechaValida` con las fechas. */
+function estadoPagoValido(valor: string | undefined): EstadoPago | undefined {
+  return ESTADOS_PAGO.includes(valor as EstadoPago) ? (valor as EstadoPago) : undefined
+}
 
 type Params = Promise<Record<string, string | undefined>>
 
@@ -51,6 +59,12 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pa
     listarPedidos({
       rango,
       estado: (sp.estado as EstadoPedido | undefined) || undefined,
+      estadoPago: estadoPagoValido(sp.estadoPago),
+      // `clienteId` y `asesorId` no tienen control visible en esta pantalla:
+      // son filtros solo por URL, para que otras pantallas (ficha del
+      // cliente, panel del asesor) enlacen aquí ya filtrado.
+      clienteId: sp.clienteId || undefined,
+      asesorId: sp.asesorId || undefined,
       soloPorCobrar: pestana === 'porcobrar',
       pagina,
     }),

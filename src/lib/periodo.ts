@@ -1,5 +1,5 @@
 /** Colombia no tiene horario de verano desde 1993, así que el desfase es
- *  fijo. Escribirlo a mano hace el cálculo determinista y probable, sin
+ *  fijo. Escribirlo a mano hace el cálculo determinista y comprobable, sin
  *  depender de la zona en que corra el servidor. */
 const DESFASE = '-05:00'
 

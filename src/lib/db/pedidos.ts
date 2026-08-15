@@ -236,7 +236,14 @@ export async function anularPedido(id: string, motivo: string): Promise<void> {
   }
 
   const usuario = await obtenerUsuarioActual()
-  const { error } = await supabase
+  // Igual que en `cambiarEstado`: la guarda va también en el `WHERE`, no
+  // solo en la lectura previa. Sin `.eq('estado', pedido.estado)`, si otra
+  // sesión marca el pedido como entregado entre el `select` y este
+  // `update`, este `update` no lo sabe y lo anula igual: un pedido ya
+  // entregado quedaría anulado, y `anulado` no tiene transición de salida
+  // (ver TRANSICIONES en estados.ts), así que recuperarlo exigiría entrar
+  // a la base a mano.
+  const { data: actualizados, error } = await supabase
     .from('pedidos')
     .update({
       estado: 'anulado',
@@ -245,8 +252,13 @@ export async function anularPedido(id: string, motivo: string): Promise<void> {
       anulado_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('estado', pedido.estado)
+    .select('id')
 
   if (error) throw new Error(`No se pudo anular: ${error.message}`)
+  if (!actualizados || actualizados.length === 0) {
+    throw new Error('No se pudo anular: otra sesión cambió el estado de este pedido mientras tanto. Recarga la página e intenta de nuevo.')
+  }
 }
 
 /** Idempotente: cobrar dos veces, o dos personas a la vez, no reescriben
