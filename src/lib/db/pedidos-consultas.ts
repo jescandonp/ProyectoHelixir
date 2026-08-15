@@ -61,8 +61,15 @@ export async function listarPedidos(filtros: FiltrosPedidos): Promise<PaginaPedi
     .from('pedidos')
     .select(COLUMNAS, { count: 'exact' })
     // Un borrador huérfano de un fallo a mitad de confirmar no ensucia
-    // la lista ni los totales.
+    // la lista ni los totales. Tener consecutivo NO basta para saber que un
+    // pedido es real: `confirmarPedido` cambia el estado y solo después pide
+    // el consecutivo, así que un fallo entre esos dos pasos —o un consecutivo
+    // asignado a mano fuera de ese flujo— puede dejar un pedido en
+    // `borrador` con consecutivo ya puesto. El filtro debe decir "no es
+    // borrador", que es la intención real, en vez de inferirlo del
+    // consecutivo.
     .not('consecutivo', 'is', null)
+    .neq('estado', 'borrador')
     // Dos pedidos pueden compartir el mismo instante en `fecha`; sin un
     // desempate por `id` el orden entre páginas no queda determinado y una
     // fila puede repetirse o desaparecer al paginar.
@@ -96,7 +103,10 @@ export async function resumenPorCobrar(): Promise<{ total: number; pedidos: numb
   const { data, error } = await supabase
     .from('pedidos')
     .select('total')
+    // Ver el comentario en `listarPedidos`: el consecutivo no garantiza que
+    // el pedido esté confirmado, hay que excluir `borrador` explícitamente.
     .not('consecutivo', 'is', null)
+    .neq('estado', 'borrador')
     .neq('estado_pago', 'pagado')
     .neq('estado', 'anulado')
 
@@ -117,7 +127,10 @@ export async function historialDelCliente(
     .from('pedidos')
     .select(COLUMNAS)
     .eq('cliente_id', clienteId)
+    // Ver el comentario en `listarPedidos`: el consecutivo no garantiza que
+    // el pedido esté confirmado, hay que excluir `borrador` explícitamente.
     .not('consecutivo', 'is', null)
+    .neq('estado', 'borrador')
     .neq('estado', 'anulado')
     // Mismo desempate que en listarPedidos: sin el `id` como segundo
     // criterio, pedidos con la misma `fecha` quedarían en un orden
@@ -138,7 +151,10 @@ export async function historialDelCliente(
     .from('pedidos')
     .select('total')
     .eq('cliente_id', clienteId)
+    // Mismo filtro que arriba: consecutivo no basta, hace falta excluir
+    // también `borrador`.
     .not('consecutivo', 'is', null)
+    .neq('estado', 'borrador')
     .neq('estado', 'anulado')
 
   if (errorTotales) {
@@ -164,7 +180,12 @@ export async function listarPedidosDeHoyDelCliente(
     .select('consecutivo, total')
     .eq('cliente_id', clienteId)
     .neq('estado', 'anulado')
+    // Igual que en listarPedidos: el consecutivo no basta para saber que el
+    // pedido es real. Un borrador —el mismo formulario que se está llenando,
+    // u otro abandonado— no es un pedido puesto y no debe disparar el aviso
+    // de posible duplicado.
     .not('consecutivo', 'is', null)
+    .neq('estado', 'borrador')
     .gte('fecha', inicioDelDia.toISOString())
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
