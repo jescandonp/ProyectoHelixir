@@ -1,33 +1,133 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* --- Velvet Swirl -------------------------------------------------------
+   Los valores salen tal cual de Diseño/velvet_swirl/DESIGN.md. Solo se
+   renombran las llaves de radio: DESIGN.md usa la escala de Tailwind 3
+   (DEFAULT/md/lg/xl) y aquí toca la de Tailwind 4, donde `rounded` a secas
+   no es configurable. El mapa es DEFAULT→md, md→lg, lg→xl, xl→2xl; ningún
+   valor cambia, solo el nombre con el que se pide.                       */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  /* Superficies: crema de fondo, blanco puro para las tarjetas */
+  --color-superficie: #fcf9f8;
+  --color-superficie-tenue: #dcd9d9;
+  --color-tarjeta: #ffffff;
+  --color-tarjeta-baja: #f6f3f2;
+  --color-tarjeta-media: #f0eded;
+  --color-tarjeta-alta: #eae7e7;
+  --color-tarjeta-tope: #e4e2e1;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Texto */
+  --color-tinta: #1b1c1c;
+  --color-tinta-suave: #5a3f47;
+  --color-tinta-tenue: #67645d;
+
+  /* Bordes */
+  --color-borde: #8e6f77;
+  --color-borde-suave: #e2bdc7;
+
+  /* Rosa de marca */
+  --color-primario: #b90064;
+  --color-primario-vivo: #e6007e;
+  --color-sobre-primario: #ffffff;
+  --color-primario-fijo: #ffd9e2;
+  --color-primario-fijo-tenue: #ffb0c9;
+  --color-sobre-primario-fijo: #3e001e;
+  --color-sobre-primario-fijo-variante: #8e004b;
+
+  /* Teal: estados de éxito y seguimiento */
+  --color-terciario: #006767;
+  --color-terciario-vivo: #008282;
+  --color-sobre-terciario: #ffffff;
+  --color-terciario-fijo: #86f4f4;
+  --color-terciario-fijo-tenue: #68d7d7;
+  --color-sobre-terciario-fijo: #002020;
+  --color-sobre-terciario-fijo-variante: #004f50;
+
+  /* Neutro cálido: lo secundario y lo deshabilitado */
+  --color-secundario: #615e57;
+  --color-secundario-contenedor: #e7e2d9;
+  --color-secundario-contenedor-tenue: #cbc6bd;
+  --color-sobre-secundario: #ffffff;
+  --color-sobre-secundario-fijo: #1d1b16;
+  --color-sobre-secundario-fijo-variante: #494640;
+
+  /* Error */
+  --color-error: #ba1a1a;
+  --color-sobre-error: #ffffff;
+  --color-error-contenedor: #ffdad6;
+  --color-sobre-error-contenedor: #93000a;
+
+  /* Inverso: para lo que va sobre fondo oscuro */
+  --color-inverso: #303030;
+  --color-sobre-inverso: #f3f0f0;
+
+  /* Tipografía: Plus Jakarta Sans titula, Manrope lee */
+  --font-titulo: var(--fuente-titulo), ui-sans-serif, system-ui, sans-serif;
+  --font-cuerpo: var(--fuente-cuerpo), ui-sans-serif, system-ui, sans-serif;
+
+  --text-display: 48px;
+  --text-display--line-height: 56px;
+  --text-display--font-weight: 800;
+  --text-display--letter-spacing: -0.02em;
+
+  --text-titulo-lg: 32px;
+  --text-titulo-lg--line-height: 40px;
+  --text-titulo-lg--font-weight: 700;
+
+  /* La misma jerarquía que `titulo-lg`, dos puntos más baja: en un celular
+     32px de título se come media pantalla antes del primer dato. */
+  --text-titulo-lg-mobile: 28px;
+  --text-titulo-lg-mobile--line-height: 36px;
+  --text-titulo-lg-mobile--font-weight: 700;
+
+  --text-titulo-md: 24px;
+  --text-titulo-md--line-height: 32px;
+  --text-titulo-md--font-weight: 700;
+
+  --text-cuerpo-lg: 18px;
+  --text-cuerpo-lg--line-height: 28px;
+  --text-cuerpo-lg--font-weight: 400;
+
+  --text-cuerpo-md: 16px;
+  --text-cuerpo-md--line-height: 24px;
+  --text-cuerpo-md--font-weight: 500;
+
+  --text-etiqueta-lg: 14px;
+  --text-etiqueta-lg--line-height: 20px;
+  --text-etiqueta-lg--font-weight: 700;
+  --text-etiqueta-lg--letter-spacing: 0.05em;
+
+  --text-etiqueta-md: 12px;
+  --text-etiqueta-md--line-height: 16px;
+  --text-etiqueta-md--font-weight: 600;
+
+  /* Formas: nada de esquinas duras */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;    /* botones e inputs */
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;   /* tarjetas y modales */
+
+  /* Sombras con tinte rosa, para que la profundidad no se vea gris */
+  --shadow-nivel1: 0 4px 20px rgba(230, 0, 126, 0.05);
+  --shadow-nivel2: 0 6px 24px rgba(230, 0, 126, 0.1);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-superficie);
+  color: var(--color-tinta);
+  font-family: var(--font-cuerpo);
 }
 
 /* --- Documentos imprimibles ---------------------------------------------
    El mismo DOM se usa para la imagen de WhatsApp y para el papel.
-   El tamaño de página lo inyecta VistaDocumentos antes de imprimir.    */
+   El tamaño de página lo inyecta VistaDocumentos antes de imprimir.
+
+   Estas hojas van fuera del sistema de color: la impresora térmica quema
+   puntos negros y no entiende de rosa ni de crema. Por eso fijan sus
+   propios `background`, `color` y `font-family`, y ningún token de arriba
+   debe alcanzarlas.                                                      */
 
 .hoja-recibo {
   width: 80mm;

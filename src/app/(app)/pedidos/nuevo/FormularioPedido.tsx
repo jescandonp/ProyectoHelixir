@@ -13,6 +13,10 @@ import { validarParaConfirmar } from '@/lib/pedidos/validacion'
 import { crearBorrador, guardarBorrador, confirmarPedido } from '@/lib/db/pedidos'
 import { listarPedidosDeHoyDelCliente } from '@/lib/db/pedidos-consultas'
 import { buscarDuplicado, type PedidoReciente } from '@/lib/pedidos/duplicados'
+import {
+  TARJETA, ETIQUETA_SECCION, CAMPO_CHICO, CHIP_CODIGO, BOTON_FANTASMA,
+  AVISO_ERROR, AVISO_ATENCION,
+} from '@/components/estilos'
 import type {
   Cliente, Direccion, ItemPedido, Producto, TipoEntrega, EstadoPago,
 } from '@/lib/tipos'
@@ -160,75 +164,88 @@ export function FormularioPedido({ productos, valorDomicilioDefault }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl p-4">
-      <h1 className="mb-3 text-lg font-bold">Nuevo pedido</h1>
+    <div className="mx-auto max-w-6xl px-4 py-6 md:px-10">
+      <h1 className="mb-6 font-titulo text-titulo-lg-mobile text-tinta md:text-titulo-lg">
+        Nuevo pedido
+      </h1>
 
-      <div className="flex items-start gap-4">
-        <div className="flex-[1.55]">
-          <p className="mb-1 text-[10px] font-bold tracking-wider text-slate-500">1 · CLIENTE</p>
-          {cliente ? (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <strong>{cliente.nombre}</strong>{' '}
-                  <span className="rounded-full bg-emerald-100 px-1.5 text-[10px] text-emerald-700">
-                    {cliente.codigo}
-                  </span>
-                  <div className="text-slate-600">
-                    {direccion?.linea} · {direccion?.barrio} · {direccion?.ciudad}
+      {/* En el celular es una sola columna y el resumen queda de último, que
+          es el orden en que se toma el pedido: primero quién, luego qué, y
+          al final cuánto. En escritorio el resumen se queda a la vista. */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="space-y-6 lg:flex-[1.55]">
+          <section className={`${TARJETA} p-4`}>
+            <p className={`mb-3 ${ETIQUETA_SECCION}`}>1 · Cliente</p>
+            {cliente ? (
+              <div className="rounded-xl border border-borde-suave bg-tarjeta-baja p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <span className="text-cuerpo-md text-tinta">{cliente.nombre}</span>{' '}
+                    <span className={CHIP_CODIGO}>{cliente.codigo}</span>
+                    <div className="mt-1 text-etiqueta-lg font-medium tracking-normal text-tinta-suave">
+                      {direccion?.linea} · {direccion?.barrio} · {direccion?.ciudad}
+                    </div>
+                    <div className="text-etiqueta-lg font-medium tracking-normal text-tinta-suave">
+                      {cliente.telefono}
+                    </div>
                   </div>
-                  <div className="text-slate-600">{cliente.telefono}</div>
+                  <button type="button" onClick={() => { setCliente(null); setDireccion(null) }}
+                    className={BOTON_FANTASMA}>
+                    cambiar
+                  </button>
                 </div>
-                <button type="button" onClick={() => { setCliente(null); setDireccion(null) }}
-                  className="text-xs text-blue-600">cambiar</button>
+                {(cliente.direcciones?.length ?? 0) > 1 && (
+                  <select
+                    value={direccion?.id} aria-label="Dirección de entrega"
+                    onChange={(e) =>
+                      setDireccion(cliente.direcciones!.find((d) => d.id === e.target.value)!)
+                    }
+                    className={`${CAMPO_CHICO} mt-3 w-full bg-tarjeta`}
+                  >
+                    {cliente.direcciones!.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.etiqueta ?? d.linea} — {d.ciudad}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
-              {(cliente.direcciones?.length ?? 0) > 1 && (
-                <select
-                  value={direccion?.id}
-                  onChange={(e) =>
-                    setDireccion(cliente.direcciones!.find((d) => d.id === e.target.value)!)
-                  }
-                  className="mt-2 w-full rounded border px-2 py-1 text-xs"
-                >
-                  {cliente.direcciones!.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.etiqueta ?? d.linea} — {d.ciudad}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          ) : (
-            <BuscadorCliente onSeleccionar={escogerCliente} />
-          )}
+            ) : (
+              <BuscadorCliente onSeleccionar={escogerCliente} />
+            )}
+          </section>
 
-          <p className="mb-1 mt-4 text-[10px] font-bold tracking-wider text-slate-500">2 · SABORES</p>
-          <GrillaSabores
-            productos={productos} cantidades={cantidades}
-            onSumar={sumar} onRestar={restar} onItemLibre={agregarLibre}
-          />
+          <section className={`${TARJETA} p-4`}>
+            <p className={`mb-3 ${ETIQUETA_SECCION}`}>2 · Sabores</p>
+            <GrillaSabores
+              productos={productos} cantidades={cantidades}
+              onSumar={sumar} onRestar={restar} onItemLibre={agregarLibre}
+            />
+          </section>
         </div>
 
-        <div className="flex-1">
-          {duplicado && (
-            <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              Ojo: este cliente ya tiene hoy el pedido <strong>{duplicado.consecutivo}</strong> por
-              el mismo valor. Si son dos pedidos distintos, sigue sin problema.
-            </div>
-          )}
-          <ResumenPedido
-            items={items} totales={totales} valorDomicilio={valorDomicilio}
-            tipoEntrega={tipoEntrega} transportadora={transportadora}
-            estadoPago={estadoPago} observaciones={observaciones}
-            problemas={problemas} confirmando={confirmando}
-            onCambiarDomicilio={setValorDomicilio}
-            onCambiarEntrega={setTipoEntrega}
-            onCambiarTransportadora={setTransportadora}
-            onCambiarPago={setEstadoPago}
-            onCambiarObservaciones={setObservaciones}
-            onConfirmar={confirmar}
-          />
-          {error && <p className="mt-2 rounded bg-red-50 p-2 text-sm text-red-700">{error}</p>}
+        <div className="lg:flex-1">
+          <div className="lg:sticky lg:top-24">
+            {duplicado && (
+              <div className={`${AVISO_ATENCION} mb-3`}>
+                Ojo: este cliente ya tiene hoy el pedido <strong>{duplicado.consecutivo}</strong> por
+                el mismo valor. Si son dos pedidos distintos, sigue sin problema.
+              </div>
+            )}
+            <ResumenPedido
+              items={items} totales={totales} valorDomicilio={valorDomicilio}
+              tipoEntrega={tipoEntrega} transportadora={transportadora}
+              estadoPago={estadoPago} observaciones={observaciones}
+              problemas={problemas} confirmando={confirmando}
+              onCambiarDomicilio={setValorDomicilio}
+              onCambiarEntrega={setTipoEntrega}
+              onCambiarTransportadora={setTransportadora}
+              onCambiarPago={setEstadoPago}
+              onCambiarObservaciones={setObservaciones}
+              onConfirmar={confirmar}
+            />
+            {error && <p className={`${AVISO_ERROR} mt-3`}>{error}</p>}
+          </div>
         </div>
       </div>
     </div>

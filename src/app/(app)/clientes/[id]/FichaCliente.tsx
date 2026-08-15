@@ -9,6 +9,10 @@ import {
   actualizarCliente, agregarDireccion, actualizarDireccion, marcarDireccionPrincipal,
   type DatosDireccion,
 } from '@/lib/db/clientes'
+import {
+  TARJETA, CAMPO, CAMPO_CHICO, CHIP, CHIP_CODIGO, ETIQUETA, ETIQUETA_SECCION,
+  BOTON_PRIMARIO, BOTON_SECUNDARIO, BOTON_FANTASMA, AVISO_ERROR, AVISO_EXITO,
+} from '@/components/estilos'
 import type { Cliente, Direccion } from '@/lib/tipos'
 import type { FilaPedido } from '@/lib/db/pedidos-consultas'
 
@@ -82,71 +86,67 @@ export function FichaCliente({
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-4">
-      <div className="flex items-center gap-2">
-        <Link href="/clientes" className="text-sm text-blue-600">← Clientes</Link>
-        <span className="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-[10px] text-blue-700">
-          {cliente.codigo}
-        </span>
+    <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 md:px-10">
+      <div className="flex items-center gap-3">
+        <Link href="/clientes" className={BOTON_FANTASMA}>← Clientes</Link>
+        <span className={CHIP_CODIGO}>{cliente.codigo}</span>
       </div>
 
-      <section className="rounded-lg border bg-white p-4">
-        <h2 className="mb-3 text-sm font-bold">Datos del cliente</h2>
-        <div className="grid gap-2 sm:grid-cols-2">
+      <section className={`${TARJETA} p-6`}>
+        <h2 className={`mb-4 ${ETIQUETA_SECCION}`}>Datos del cliente</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-xs text-slate-500">Nombre</span>
+            <span className={ETIQUETA}>Nombre</span>
             <input value={datos.nombre} onChange={(e) => cambiarDatos({ nombre: e.target.value })}
-              className="mt-1 w-full rounded border px-2 py-1.5 text-sm" />
+              className={CAMPO} />
           </label>
           <label className="block">
-            <span className="text-xs text-slate-500">Teléfono</span>
+            <span className={ETIQUETA}>Teléfono</span>
             <input value={datos.telefono} onChange={(e) => cambiarDatos({ telefono: e.target.value })}
-              className="mt-1 w-full rounded border px-2 py-1.5 text-sm" />
+              className={CAMPO} />
           </label>
           <label className="block">
-            <span className="text-xs text-slate-500">
+            <span className={ETIQUETA}>
               Cédula
               <button type="button" onClick={() => setCedulaVisible(!cedulaVisible)}
-                className="ml-2 text-blue-600">
+                className={`ml-2 ${BOTON_FANTASMA}`}>
                 {cedulaVisible ? 'ocultar' : 'revelar'}
               </button>
             </span>
             {cedulaVisible ? (
               <input value={datos.cedula} onChange={(e) => cambiarDatos({ cedula: e.target.value })}
-                className="mt-1 w-full rounded border px-2 py-1.5 text-sm" />
+                className={CAMPO} />
             ) : (
-              <p className="mt-1 rounded border bg-slate-50 px-2 py-1.5 text-sm tabular-nums">
-                {enmascarar(datos.cedula)}
-              </p>
+              <p className={`${CAMPO} tabular-nums`}>{enmascarar(datos.cedula)}</p>
             )}
           </label>
           <label className="block">
-            <span className="text-xs text-slate-500">Tipo</span>
+            <span className={ETIQUETA}>Tipo</span>
             <select value={datos.tipo}
               onChange={(e) => cambiarDatos({ tipo: e.target.value as Cliente['tipo'] })}
-              className="mt-1 w-full rounded border px-2 py-1.5 text-sm">
+              className={CAMPO}>
               <option value="detal">Detal</option>
               <option value="mayorista">Mayorista</option>
             </select>
           </label>
         </div>
-        <label className="mt-2 block">
-          <span className="text-xs text-slate-500">Notas</span>
+        <label className="mt-4 block">
+          <span className={ETIQUETA}>Notas</span>
           <textarea value={datos.notas} rows={2}
             onChange={(e) => cambiarDatos({ notas: e.target.value })}
-            className="mt-1 w-full rounded border px-2 py-1.5 text-sm" />
+            className={CAMPO} />
         </label>
         <button type="button" disabled={pendiente}
           onClick={() => ejecutar(() => actualizarCliente(cliente.id, datos), 'Guardado')}
-          className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+          className={`${BOTON_PRIMARIO} mt-4`}>
           Guardar
         </button>
       </section>
 
-      <section className="rounded-lg border bg-white p-4">
-        <h2 className="mb-3 text-sm font-bold">Direcciones</h2>
+      <section className={`${TARJETA} p-6`}>
+        <h2 className={`mb-4 ${ETIQUETA_SECCION}`}>Direcciones</h2>
         {(cliente.direcciones ?? []).map((d) => (
-          <div key={d.id} className="mb-2 rounded border p-2 text-sm">
+          <div key={d.id} className="mb-3 rounded-xl border border-borde-suave p-4">
             {editandoDireccion === d.id ? (
               <CamposDireccion
                 valores={formDireccion} onCambiar={setFormDireccion}
@@ -159,26 +159,28 @@ export function FichaCliente({
                 pendiente={pendiente}
               />
             ) : (
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <strong>{d.etiqueta ?? d.linea}</strong>
+                  <span className="text-cuerpo-md text-tinta">{d.etiqueta ?? d.linea}</span>
                   {d.esPrincipal && (
-                    <span className="ml-2 rounded bg-emerald-100 px-1.5 text-[10px] text-emerald-700">
+                    <span className={`ml-2 ${CHIP} bg-terciario-fijo text-sobre-terciario-fijo`}>
                       principal
                     </span>
                   )}
-                  <div className="text-slate-600">
+                  <div className="text-etiqueta-lg font-medium tracking-normal text-tinta-suave">
                     {d.linea} · {d.barrio} · {d.ciudad}
                   </div>
-                  {d.indicaciones && <div className="text-xs italic text-slate-500">{d.indicaciones}</div>}
+                  {d.indicaciones && (
+                    <div className="text-etiqueta-md italic text-tinta-tenue">{d.indicaciones}</div>
+                  )}
                 </div>
-                <div className="flex gap-2 text-xs">
-                  <button type="button" className="text-blue-600"
+                <div className="flex shrink-0 gap-3">
+                  <button type="button" className={BOTON_FANTASMA}
                     onClick={() => { setFormDireccion(desdeDireccion(d)); setEditandoDireccion(d.id) }}>
                     editar
                   </button>
                   {!d.esPrincipal && (
-                    <button type="button" className="text-blue-600" disabled={pendiente}
+                    <button type="button" className={BOTON_FANTASMA} disabled={pendiente}
                       onClick={() => ejecutar(
                         () => marcarDireccionPrincipal(cliente.id, d.id), 'Principal cambiada',
                       )}>
@@ -192,7 +194,7 @@ export function FichaCliente({
         ))}
 
         {editandoDireccion === 'nueva' ? (
-          <div className="rounded border border-emerald-300 bg-emerald-50 p-2">
+          <div className="rounded-xl border-2 border-primario bg-primario-fijo/40 p-4">
             <CamposDireccion
               valores={formDireccion} onCambiar={setFormDireccion}
               onGuardar={() => ejecutar(
@@ -207,27 +209,28 @@ export function FichaCliente({
         ) : (
           <button type="button"
             onClick={() => { setFormDireccion(DIRECCION_VACIA); setEditandoDireccion('nueva') }}
-            className="rounded border border-dashed px-3 py-1.5 text-xs font-semibold text-emerald-700">
+            className="w-full rounded-lg border border-dashed border-borde-suave py-3 text-etiqueta-lg text-primario transition-colors hover:border-primario hover:bg-primario-fijo/40">
             ＋ Agregar dirección
           </button>
         )}
       </section>
 
-      {error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</p>}
-      {mensaje && <p className="text-sm text-emerald-700">{mensaje}</p>}
+      {error && <p className={AVISO_ERROR}>{error}</p>}
+      {mensaje && <p className={AVISO_EXITO}>{mensaje}</p>}
 
-      <section className="rounded-lg border bg-white p-4">
-        <h2 className="mb-1 text-sm font-bold">Historial</h2>
-        <p className="mb-3 text-sm text-slate-600">
+      <section className={`${TARJETA} p-6`}>
+        <h2 className={`mb-2 ${ETIQUETA_SECCION}`}>Historial</h2>
+        <p className="mb-4 text-cuerpo-md text-tinta-tenue">
           {historial.filas.length} pedido{historial.filas.length === 1 ? '' : 's'} ·
-          total comprado <strong>{formatearPesos(historial.totalComprado)}</strong>
+          total comprado{' '}
+          <strong className="text-tinta">{formatearPesos(historial.totalComprado)}</strong>
         </p>
         {historial.filas.map((p) => (
           <Link key={p.id} href={`/pedidos/${p.id}/documentos`}
-            className="flex justify-between border-b py-1.5 text-sm hover:bg-slate-50">
-            <span className="font-mono text-xs">{p.consecutivo}</span>
-            <span className="text-xs text-slate-500">{formatearFechaCo(p.fecha)}</span>
-            <span className="tabular-nums">{formatearPesos(p.total)}</span>
+            className="flex items-center justify-between gap-3 border-b border-borde-suave/60 py-2.5 transition-colors last:border-0 hover:bg-tarjeta-baja">
+            <span className="font-mono text-etiqueta-md text-tinta-suave">{p.consecutivo}</span>
+            <span className="text-etiqueta-md text-tinta-tenue">{formatearFechaCo(p.fecha)}</span>
+            <span className="tabular-nums text-cuerpo-md text-tinta">{formatearPesos(p.total)}</span>
           </Link>
         ))}
       </section>
@@ -245,35 +248,35 @@ function CamposDireccion({
   pendiente: boolean
 }) {
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2">
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <input placeholder="Etiqueta (casa, oficina…)" value={valores.etiqueta}
           onChange={(e) => onCambiar({ ...valores, etiqueta: e.target.value })}
-          className="rounded border px-2 py-1 text-sm" />
+          className={`${CAMPO_CHICO} w-full bg-tarjeta`} />
         <input placeholder="Dirección" value={valores.linea}
           onChange={(e) => onCambiar({ ...valores, linea: e.target.value })}
-          className="rounded border px-2 py-1 text-sm" />
+          className={`${CAMPO_CHICO} w-full bg-tarjeta`} />
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <input placeholder="Barrio" value={valores.barrio}
           onChange={(e) => onCambiar({ ...valores, barrio: e.target.value })}
-          className="rounded border px-2 py-1 text-sm" />
+          className={`${CAMPO_CHICO} w-full bg-tarjeta`} />
         <input placeholder="Ciudad" value={valores.ciudad}
           onChange={(e) => onCambiar({ ...valores, ciudad: e.target.value })}
-          className="rounded border px-2 py-1 text-sm" />
+          className={`${CAMPO_CHICO} w-full bg-tarjeta`} />
         <input placeholder="Depto." value={valores.departamento}
           onChange={(e) => onCambiar({ ...valores, departamento: e.target.value })}
-          className="rounded border px-2 py-1 text-sm" />
+          className={`${CAMPO_CHICO} w-full bg-tarjeta`} />
       </div>
       <input placeholder="Indicaciones" value={valores.indicaciones}
         onChange={(e) => onCambiar({ ...valores, indicaciones: e.target.value })}
-        className="w-full rounded border px-2 py-1 text-sm" />
+        className={`${CAMPO_CHICO} w-full bg-tarjeta`} />
       <div className="flex gap-2">
         <button type="button" onClick={onGuardar} disabled={pendiente}
-          className="rounded bg-emerald-600 px-3 py-1 text-sm font-semibold text-white disabled:opacity-50">
+          className={`${BOTON_PRIMARIO} px-3 py-1.5`}>
           Guardar
         </button>
-        <button type="button" onClick={onCancelar} className="rounded border px-3 py-1 text-sm">
+        <button type="button" onClick={onCancelar} className={BOTON_SECUNDARIO}>
           Cancelar
         </button>
       </div>

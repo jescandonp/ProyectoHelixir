@@ -6,6 +6,7 @@ import { Recibo } from '@/components/documentos/Recibo'
 import { RotuloLocal } from '@/components/documentos/RotuloLocal'
 import { RotuloNacional } from '@/components/documentos/RotuloNacional'
 import { descargarComoPng } from '@/lib/documentos/a-png'
+import { BOTON_PRIMARIO, BOTON_SECUNDARIO, BOTON_EXITO } from '@/components/estilos'
 import type { PedidoCompleto } from '@/lib/db/pedidos'
 import type { Ajustes } from '@/lib/db/ajustes'
 
@@ -50,39 +51,43 @@ export function VistaDocumentos({
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-4">
-      <div className="solo-pantalla mb-4 flex flex-wrap items-center gap-2">
-        <Link href="/pedidos/nuevo" className="rounded-lg border bg-white px-3 py-2 text-sm">
+    <div className="mx-auto max-w-3xl px-4 py-6 md:px-10">
+      <div className="solo-pantalla mb-6 flex flex-wrap items-center gap-3">
+        <Link href="/pedidos/nuevo" className={BOTON_SECUNDARIO}>
           ← Nuevo pedido
         </Link>
 
-        <div className="flex overflow-hidden rounded-lg border bg-white">
-          <button
-            onClick={() => setPestana('recibo')}
-            className={`px-4 py-2 text-sm ${pestana === 'recibo' ? 'bg-slate-900 font-semibold text-white' : ''}`}
-          >
-            Recibo
-          </button>
-          <button
-            onClick={() => setPestana('rotulo')}
-            className={`px-4 py-2 text-sm ${pestana === 'rotulo' ? 'bg-slate-900 font-semibold text-white' : ''}`}
-          >
-            Rótulo {pedido.tipoEntrega === 'local' ? 'local' : 'nacional'}
-          </button>
+        <div className="inline-flex rounded-full bg-tarjeta-media p-1">
+          {(['recibo', 'rotulo'] as Pestana[]).map((clave) => (
+            <button
+              key={clave} type="button" onClick={() => setPestana(clave)}
+              aria-pressed={pestana === clave}
+              className={`rounded-full px-4 py-1.5 text-etiqueta-lg transition-colors ${
+                pestana === clave
+                  ? 'bg-primario text-sobre-primario'
+                  : 'text-tinta-tenue hover:text-primario'
+              }`}
+            >
+              {clave === 'recibo'
+                ? 'Recibo'
+                : `Rótulo ${pedido.tipoEntrega === 'local' ? 'local' : 'nacional'}`}
+            </button>
+          ))}
         </div>
 
-        <button onClick={imprimir}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+        <button type="button" onClick={imprimir} className={BOTON_PRIMARIO}>
           🖨 Imprimir
         </button>
-        <button onClick={descargar} disabled={generando}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+        <button type="button" onClick={descargar} disabled={generando} className={BOTON_EXITO}>
           {generando ? 'Generando…' : '⬇ Imagen para WhatsApp'}
         </button>
       </div>
 
       <div className="flex justify-center">
-        <div ref={referencia} className="shadow-lg">
+        {/* La sombra va en este envoltorio y no en la hoja: `html-to-image`
+            captura este nodo para la imagen de WhatsApp, y la hoja tiene que
+            seguir siendo blanco puro para la impresora térmica. */}
+        <div ref={referencia} className="shadow-nivel2">
           {pestana === 'recibo' ? (
             <Recibo pedido={pedido} ajustes={ajustes} />
           ) : pedido.tipoEntrega === 'local' ? (

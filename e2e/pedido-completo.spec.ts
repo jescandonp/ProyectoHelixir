@@ -5,9 +5,9 @@ const NOMBRE_CLIENTE = `Cliente Prueba ${SUFIJO}`
 
 test('toma un pedido de punta a punta y genera recibo y rótulo', async ({ page }) => {
   await page.goto('/ingresar')
-  await page.getByPlaceholder('Correo').fill(process.env.E2E_CORREO!)
-  await page.getByPlaceholder('Contraseña').fill(process.env.E2E_CLAVE!)
-  await page.getByRole('button', { name: 'Entrar' }).click()
+  await page.getByLabel('Correo electrónico').fill(process.env.E2E_CORREO!)
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE!)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
 
   await expect(page).toHaveURL(/\/pedidos\/nuevo/)
 

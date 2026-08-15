@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { buscarClientes, crearCliente } from '@/lib/db/clientes'
+import {
+  CAMPO, BOTON_PRIMARIO, BOTON_SECUNDARIO, CHIP_CODIGO, ETIQUETA_SECCION, AVISO_ERROR,
+} from '@/components/estilos'
+import { IconoLupa } from '@/components/iconos'
 import type { Cliente } from '@/lib/tipos'
 
 const FORM_VACIO = {
@@ -54,44 +58,47 @@ export function BuscadorCliente({ onSeleccionar }: { onSeleccionar: (c: Cliente)
 
   if (creando) {
     return (
-      <form onSubmit={guardar} className="space-y-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 p-3">
-        <p className="text-xs font-bold tracking-wider text-emerald-700">CLIENTE NUEVO</p>
+      <form
+        onSubmit={guardar}
+        className="space-y-3 rounded-xl border-2 border-primario bg-primario-fijo/40 p-4"
+      >
+        <p className={ETIQUETA_SECCION}>Cliente nuevo</p>
         <input required autoFocus placeholder="Nombre" value={form.nombre}
           onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-          className="w-full rounded border px-2 py-1.5 text-sm" />
-        <div className="grid grid-cols-2 gap-2">
+          className={`${CAMPO} bg-tarjeta`} />
+        <div className="grid gap-3 sm:grid-cols-2">
           <input placeholder="Teléfono" value={form.telefono}
             onChange={(e) => setForm({ ...form, telefono: e.target.value })}
-            className="rounded border px-2 py-1.5 text-sm" />
+            className={`${CAMPO} bg-tarjeta`} />
           <input placeholder="Cédula (opcional)" value={form.cedula}
             onChange={(e) => setForm({ ...form, cedula: e.target.value })}
-            className="rounded border px-2 py-1.5 text-sm" />
+            className={`${CAMPO} bg-tarjeta`} />
         </div>
         <input required placeholder="Dirección" value={form.linea}
           onChange={(e) => setForm({ ...form, linea: e.target.value })}
-          className="w-full rounded border px-2 py-1.5 text-sm" />
-        <div className="grid grid-cols-3 gap-2">
+          className={`${CAMPO} bg-tarjeta`} />
+        <div className="grid gap-3 sm:grid-cols-3">
           <input placeholder="Barrio" value={form.barrio}
             onChange={(e) => setForm({ ...form, barrio: e.target.value })}
-            className="rounded border px-2 py-1.5 text-sm" />
+            className={`${CAMPO} bg-tarjeta`} />
           <input required placeholder="Ciudad" value={form.ciudad}
             onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
-            className="rounded border px-2 py-1.5 text-sm" />
+            className={`${CAMPO} bg-tarjeta`} />
           <input placeholder="Depto." value={form.departamento}
             onChange={(e) => setForm({ ...form, departamento: e.target.value })}
-            className="rounded border px-2 py-1.5 text-sm" />
+            className={`${CAMPO} bg-tarjeta`} />
         </div>
         <input placeholder="Indicaciones (portería, timbre…)" value={form.indicaciones}
           onChange={(e) => setForm({ ...form, indicaciones: e.target.value })}
-          className="w-full rounded border px-2 py-1.5 text-sm" />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+          className={`${CAMPO} bg-tarjeta`} />
+        {error && <p className={AVISO_ERROR}>{error}</p>}
         <div className="flex gap-2">
-          <button type="submit" disabled={guardando}
-            className="rounded bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50">
+          <button type="submit" disabled={guardando} className={BOTON_PRIMARIO}>
             {guardando ? 'Guardando…' : 'Guardar y usar'}
           </button>
-          <button type="button" onClick={() => setCreando(false)}
-            className="rounded border px-3 py-1.5 text-sm">Cancelar</button>
+          <button type="button" onClick={() => setCreando(false)} className={BOTON_SECUNDARIO}>
+            Cancelar
+          </button>
         </div>
       </form>
     )
@@ -99,30 +106,29 @@ export function BuscadorCliente({ onSeleccionar }: { onSeleccionar: (c: Cliente)
 
   return (
     <div className="relative">
+      <IconoLupa className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-borde" />
       <input
         autoFocus value={texto} onChange={(e) => setTexto(e.target.value)}
-        placeholder="🔍 Buscar cliente por nombre, teléfono o código…"
-        className="w-full rounded-lg border-2 border-blue-600 px-3 py-2 text-sm outline-none"
+        placeholder="Buscar cliente por nombre, teléfono o código…"
+        className={`${CAMPO} pl-11`}
       />
       {texto.trim().length >= 2 && (
-        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border bg-white shadow-lg">
+        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-borde-suave bg-tarjeta shadow-nivel2">
           {resultados.map((cliente) => (
             <button key={cliente.id} type="button"
               onClick={() => { onSeleccionar(cliente); setTexto('') }}
-              className="flex w-full items-center justify-between border-b px-3 py-2 text-left hover:bg-blue-50">
+              className="flex w-full items-center justify-between gap-3 border-b border-borde-suave/60 px-4 py-3 text-left transition-colors last:border-0 hover:bg-primario-fijo/40">
               <span>
-                <span className="block text-sm font-semibold">{cliente.nombre}</span>
-                <span className="block text-xs text-slate-500">
+                <span className="block text-cuerpo-md text-tinta">{cliente.nombre}</span>
+                <span className="block text-etiqueta-md text-tinta-suave">
                   {cliente.telefono} · {cliente.direcciones?.[0]?.ciudad}
                 </span>
               </span>
-              <span className="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-[10px] text-blue-700">
-                {cliente.codigo}
-              </span>
+              <span className={CHIP_CODIGO}>{cliente.codigo}</span>
             </button>
           ))}
           <button type="button" onClick={abrirCreacion}
-            className="w-full px-3 py-2 text-left text-sm font-semibold text-emerald-700 hover:bg-emerald-50">
+            className="w-full px-4 py-3 text-left text-etiqueta-lg text-primario transition-colors hover:bg-primario-fijo/40">
             ＋ Crear cliente nuevo &ldquo;{texto.trim()}&rdquo;
           </button>
         </div>
