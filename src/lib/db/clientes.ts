@@ -10,6 +10,21 @@ const CAMPOS = `
                 departamento, indicaciones, es_principal )
 `
 
+// El listado no necesita la cédula: el diseño dice que la cédula completa
+// solo se revela en la ficha del cliente. Si el listado pidiera las mismas
+// columnas que la ficha, esa regla dependería de que ningún consumidor
+// futuro pinte por accidente un campo que sí llegó en la respuesta. Pedir
+// menos columnas hace que la regla la imponga el repositorio, no la memoria
+// de quien escriba la pantalla.
+const CAMPOS_LISTADO = `
+  id, codigo, nombre, telefono, tipo, notas,
+  direcciones ( id, cliente_id, etiqueta, linea, barrio, ciudad,
+                departamento, indicaciones, es_principal )
+`
+
+/** Cliente sin cédula: lo que de verdad trae `listarClientes`. */
+export type ClienteResumen = Omit<Cliente, 'cedula'>
+
 type FilaDireccion = {
   id: string; cliente_id: string; etiqueta: string | null; linea: string
   barrio: string | null; ciudad: string; departamento: string | null
@@ -33,8 +48,31 @@ function mapearCliente(f: any): Cliente {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapearClienteResumen(f: any): ClienteResumen {
+  return {
+    id: f.id, codigo: f.codigo, nombre: f.nombre, telefono: f.telefono,
+    tipo: f.tipo, notas: f.notas,
+    direcciones: (f.direcciones ?? []).map(mapearDireccion),
+  }
+}
+
+// El texto del usuario se interpola dentro del filtro `.or(...)` de
+// PostgREST, cuya sintaxis usa la coma para separar condiciones y los
+// paréntesis para agrupar. Si no se limpia, una coma agrega una condición
+// OR que el usuario no escribió, y un paréntesis sin cerrar rompe el
+// parseo del lado del servidor y tumba toda la consulta con un error. En
+// vez de intentar escapar cada caso, simplemente quitamos esos caracteres
+// (y las comillas y los comodines de SQL, que el usuario no debería poder
+// inyectar a mano): el texto que queda sigue sirviendo para una búsqueda
+// por coincidencia parcial, solo que ya no puede alterar la forma del
+// filtro.
+function limpiarTerminoBusqueda(texto: string): string {
+  return texto.replace(/[,()"'%_]/g, '').trim()
+}
+
 export async function buscarClientes(texto: string): Promise<Cliente[]> {
-  const termino = texto.trim()
+  const termino = limpiarTerminoBusqueda(texto)
   if (termino.length < 2) return []
 
   const supabase = await crearClienteServidor()
@@ -107,14 +145,17 @@ export interface DatosDireccion {
 export async function listarClientes(
   texto: string,
   pagina = 0,
-): Promise<{ filas: Cliente[]; total: number }> {
+): Promise<{ filas: ClienteResumen[]; total: number }> {
   const supabase = await crearClienteServidor()
-  const termino = texto.trim()
+  // Si el término queda vacío después de limpiarlo (por ejemplo, el usuario
+  // solo escribió "(" o ","), lo tratamos como si no hubiera término: se
+  // lista sin filtrar en vez de mandar un filtro vacío o inválido.
+  const termino = limpiarTerminoBusqueda(texto)
   const primera = pagina * CLIENTES_POR_PAGINA
 
   let consulta = supabase
     .from('clientes')
-    .select(CAMPOS, { count: 'exact' })
+    .select(CAMPOS_LISTADO, { count: 'exact' })
     .order('nombre')
     .range(primera, primera + CLIENTES_POR_PAGINA - 1)
 
@@ -127,7 +168,7 @@ export async function listarClientes(
   const { data, error, count } = await consulta
   if (error) throw new Error(`No se pudo leer la lista de clientes: ${error.message}`)
 
-  return { filas: (data ?? []).map(mapearCliente), total: count ?? 0 }
+  return { filas: (data ?? []).map(mapearClienteResumen), total: count ?? 0 }
 }
 
 /** Cambia la ficha, nunca los pedidos: esos guardan su copia congelada. */
@@ -188,11 +229,38 @@ export async function marcarDireccionPrincipal(
 ): Promise<void> {
   const supabase = await crearClienteServidor()
 
-  const { error: errorLimpiar } = await supabase
-    .from('direcciones').update({ es_principal: false }).eq('cliente_id', clienteId)
-  if (errorLimpiar) throw new Error(`No se pudo cambiar la principal: ${errorLimpiar.message}`)
+  // Confirmamos que la dirección sea de este cliente antes de escribir nada.
+  // Sin esto, un `direccionId` equivocado (de otro cliente) marcaría como
+  // principal una dirección ajena, o el paso de limpieza de más abajo
+  // desprincipalizaría direcciones de un cliente distinto al que se le pasó.
+  const { data: direccion, error: errorLectura } = await supabase
+    .from('direcciones')
+    .select('id, cliente_id')
+    .eq('id', direccionId)
+    .maybeSingle()
 
-  const { error } = await supabase
+  if (errorLectura) throw new Error(`No se pudo verificar la dirección: ${errorLectura.message}`)
+  if (!direccion) throw new Error('La dirección no existe')
+  if (direccion.cliente_id !== clienteId) {
+    throw new Error('La dirección no pertenece a este cliente')
+  }
+
+  // Se marca primero la elegida como principal, y solo después se limpian
+  // las demás (excluyéndola con `.neq`, porque si no el paso de limpieza la
+  // volvería a poner en `false`). El orden importa: si algo falla entre los
+  // dos pasos —la conexión se cae, la segunda escritura falla—, el cliente
+  // queda con DOS direcciones principales en vez de CERO. Con dos, la
+  // pantalla de tomar pedido se recupera sola porque toma la primera
+  // principal que encuentra; con cero, ese cliente pierde el valor por
+  // defecto en silencio y nadie se entera hasta que alguien lo note.
+  const { error: errorMarcar } = await supabase
     .from('direcciones').update({ es_principal: true }).eq('id', direccionId)
-  if (error) throw new Error(`No se pudo cambiar la principal: ${error.message}`)
+  if (errorMarcar) throw new Error(`No se pudo cambiar la principal: ${errorMarcar.message}`)
+
+  const { error: errorLimpiar } = await supabase
+    .from('direcciones')
+    .update({ es_principal: false })
+    .eq('cliente_id', clienteId)
+    .neq('id', direccionId)
+  if (errorLimpiar) throw new Error(`No se pudo cambiar la principal: ${errorLimpiar.message}`)
 }
