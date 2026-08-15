@@ -60,14 +60,13 @@ export function FichaCliente({
     })
   }
 
-  // Cambia los datos del cliente y limpia cualquier aviso de éxito o error
-  // vigente: un "Guardado" que quedó en pantalla de un guardado anterior no
-  // debe seguir mostrándose junto a un campo que el usuario ya modificó y
-  // que todavía no se ha persistido.
+  // Cambia los datos del cliente y limpia solo el mensaje de éxito. El aviso
+  // de éxito deja de ser cierto en cuanto el usuario edita un campo, pero el
+  // error debe quedarse visible hasta que inicie una acción nueva (ejecutar
+  // se encarga de limpiarlo).
   function cambiarDatos(cambios: Partial<typeof datos>) {
     setDatos((prev) => ({ ...prev, ...cambios }))
     setMensaje(null)
-    setError(null)
   }
 
   function enmascarar(cedula: string): string {
