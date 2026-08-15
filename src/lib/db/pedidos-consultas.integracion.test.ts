@@ -1,10 +1,12 @@
-// Esta prueba reproduce la consulta en vez de llamar a `listarPedidos`
-// porque ese repositorio lleva `'use server'` y usa `next/headers`, que no
-// existe corriendo Vitest en Node. Lo que se verifica es la garantía a
-// nivel de base —el filtro que excluye los borradores—, que es donde vive
-// el riesgo. Es el mismo patrón que las pruebas del consecutivo.
+// Esta prueba no llama a `listarPedidos` porque ese repositorio lleva
+// `'use server'` y usa `next/headers`, que no existe corriendo Vitest en
+// Node. En su lugar arma la consulta a mano y le aplica el mismo
+// `filtrarPedidosReales` que usa `pedidos-consultas.ts`, así que si alguien
+// revierte el filtro en ese archivo compartido, esta prueba falla: ambos
+// leen la misma función, no una copia.
 import { describe, it, expect } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
+import { filtrarPedidosReales } from './filtros-pedidos'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,8 +60,9 @@ describe('el listado esconde los borradores', () => {
   // así que un fallo entre esos dos pasos —o una asignación manual fuera de
   // ese flujo— deja un pedido así). Filtrar solo por "tiene consecutivo" no
   // basta para esconderlas; hace falta el `.neq('estado', 'borrador')`
-  // explícito. Si alguien lo revierte en `pedidos-consultas.ts`, esta prueba
-  // debe fallar.
+  // explícito. Esta prueba usa `filtrarPedidosReales`, la misma función que
+  // `pedidos-consultas.ts`, así que si alguien revierte el filtro ahí —que
+  // es donde vive de verdad, no en una copia aquí— esta prueba falla.
   it('un borrador con consecutivo ya asignado no aparece ni cuenta', async () => {
     const { data: cliente } = await supabase
       .from('clientes').insert({ nombre: 'Prueba borrador con consecutivo' }).select('id').single()
@@ -71,14 +74,12 @@ describe('el listado esconde los borradores', () => {
         .from('pedidos').insert({ cliente_id: cliente!.id, total: 22222 }).select('id').single()
       await supabase.rpc('asignar_consecutivo', { p_pedido_id: borrador!.id })
 
-      // Mismos filtros que `listarPedidos`: consecutivo asignado no basta,
-      // también hay que excluir `estado = 'borrador'` explícitamente.
-      const { data, count } = await supabase
-        .from('pedidos')
-        .select('consecutivo, total', { count: 'exact' })
-        .eq('cliente_id', cliente!.id)
-        .not('consecutivo', 'is', null)
-        .neq('estado', 'borrador')
+      const { data, count } = await filtrarPedidosReales(
+        supabase
+          .from('pedidos')
+          .select('consecutivo, total', { count: 'exact' })
+          .eq('cliente_id', cliente!.id),
+      )
 
       expect(count).toBe(0)
       expect(data).toEqual([])
