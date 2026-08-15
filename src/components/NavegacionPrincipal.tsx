@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { obtenerUsuarioActual } from '@/lib/db/cliente-supabase'
+import { BotonSalir } from '@/components/BotonSalir'
 
 const ENLACES = [
   { href: '/pedidos/nuevo', texto: 'Nuevo pedido' },
@@ -26,8 +27,9 @@ export async function NavegacionPrincipal() {
           </Link>
         ))}
         {usuario && (
-          <span className="ml-auto text-xs text-slate-500">
+          <span className="ml-auto flex items-center gap-3 text-xs text-slate-500">
             {usuario.nombre} · {usuario.codigoAsesor}
+            <BotonSalir />
           </span>
         )}
       </nav>
