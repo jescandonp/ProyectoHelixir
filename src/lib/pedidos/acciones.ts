@@ -17,7 +17,7 @@ export function accionesDisponibles(
   return {
     // Una contraentrega entregada sigue siendo cobrable: el registro del
     // pago llega cuando el mensajero vuelve.
-    puedeCobrar: estado !== 'anulado' && estadoPago !== 'pagado',
+    puedeCobrar: estado !== 'borrador' && estado !== 'anulado' && estadoPago !== 'pagado',
     puedeEnviar: puedeTransicionar(estado, 'enviado'),
     puedeEntregar: puedeTransicionar(estado, 'entregado'),
     puedeAnular: puedeTransicionar(estado, 'anulado'),

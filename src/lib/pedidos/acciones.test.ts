@@ -44,4 +44,8 @@ describe('accionesDisponibles', () => {
   it('un borrador no tiene documentos que mostrar', () => {
     expect(accionesDisponibles('borrador', 'pendiente').puedeVerDocumentos).toBe(false)
   })
+
+  it('un borrador no se puede cobrar porque no se ha confirmado con el cliente', () => {
+    expect(accionesDisponibles('borrador', 'pendiente').puedeCobrar).toBe(false)
+  })
 })
