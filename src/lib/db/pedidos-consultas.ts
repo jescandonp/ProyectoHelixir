@@ -63,7 +63,11 @@ export async function listarPedidos(filtros: FiltrosPedidos): Promise<PaginaPedi
     // Un borrador huérfano de un fallo a mitad de confirmar no ensucia
     // la lista ni los totales.
     .not('consecutivo', 'is', null)
+    // Dos pedidos pueden compartir el mismo instante en `fecha`; sin un
+    // desempate por `id` el orden entre páginas no queda determinado y una
+    // fila puede repetirse o desaparecer al paginar.
     .order('fecha', { ascending: false })
+    .order('id', { ascending: false })
     .range(primera, primera + POR_PAGINA - 1)
 
   if (filtros.rango) {
@@ -115,15 +119,36 @@ export async function historialDelCliente(
     .eq('cliente_id', clienteId)
     .not('consecutivo', 'is', null)
     .neq('estado', 'anulado')
+    // Mismo desempate que en listarPedidos: sin el `id` como segundo
+    // criterio, pedidos con la misma `fecha` quedarían en un orden
+    // indeterminado entre lecturas.
     .order('fecha', { ascending: false })
+    .order('id', { ascending: false })
     .limit(100)
 
   if (error) throw new Error(`No se pudo leer el historial: ${error.message}`)
 
+  // El "total comprado" es un dato de vida del cliente y no puede depender
+  // de la lista visible (limitada a 100). Si el cliente tiene más pedidos
+  // que ese límite, sumar solo las filas traídas subestimaría el total. Por
+  // eso se hace una segunda consulta, igual que en resumenPorCobrar, que
+  // trae solo la columna `total` sin límite y sin ordenar (el orden no
+  // afecta la suma).
+  const { data: totales, error: errorTotales } = await supabase
+    .from('pedidos')
+    .select('total')
+    .eq('cliente_id', clienteId)
+    .not('consecutivo', 'is', null)
+    .neq('estado', 'anulado')
+
+  if (errorTotales) {
+    throw new Error(`No se pudo calcular el total comprado: ${errorTotales.message}`)
+  }
+
   const filas = (data ?? []).map(mapearFila)
   return {
     filas,
-    totalComprado: filas.reduce((suma, f) => suma + f.total, 0),
+    totalComprado: (totales ?? []).reduce((suma, f) => suma + f.total, 0),
   }
 }
 
