@@ -248,22 +248,3 @@ export async function anularPedido(id: string, motivo: string): Promise<void> {
 
   if (error) throw new Error(`No se pudo anular: ${error.message}`)
 }
-
-export async function listarPedidosDeHoyDelCliente(
-  clienteId: string,
-): Promise<{ consecutivo: string; total: number }[]> {
-  const supabase = await crearClienteServidor()
-  const inicioDelDia = new Date()
-  inicioDelDia.setHours(0, 0, 0, 0)
-
-  const { data } = await supabase
-    .from('pedidos')
-    .select('consecutivo, total')
-    .eq('cliente_id', clienteId)
-    .neq('estado', 'anulado')
-    .not('consecutivo', 'is', null)
-    .gte('fecha', inicioDelDia.toISOString())
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data ?? []).map((p: any) => ({ consecutivo: p.consecutivo, total: p.total }))
-}
