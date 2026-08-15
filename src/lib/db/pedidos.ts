@@ -261,7 +261,7 @@ export async function marcarPagado(id: string, metodo?: string): Promise<void> {
   if (pedido.estado === 'anulado') throw new Error('Un pedido anulado no se puede cobrar')
   if (pedido.estado_pago === 'pagado') return
 
-  const { error } = await supabase
+  const { data: actualizados, error } = await supabase
     .from('pedidos')
     .update({
       estado_pago: 'pagado',
@@ -270,8 +270,13 @@ export async function marcarPagado(id: string, metodo?: string): Promise<void> {
     })
     .eq('id', id)
     .neq('estado_pago', 'pagado')
+    .neq('estado', 'anulado')
+    .select('id')
 
   if (error) throw new Error(`No se pudo marcar pagado: ${error.message}`)
+  if (!actualizados || actualizados.length === 0) {
+    throw new Error('No se pudo cobrar: otra sesión anuló este pedido mientras tanto. Recarga la página.')
+  }
 }
 
 async function cambiarEstado(id: string, hacia: EstadoPedido): Promise<void> {
@@ -285,13 +290,17 @@ async function cambiarEstado(id: string, hacia: EstadoPedido): Promise<void> {
     throw new Error(`Un pedido en estado "${pedido.estado}" no se puede marcar como "${hacia}"`)
   }
 
-  const { error } = await supabase
+  const { data: actualizados, error } = await supabase
     .from('pedidos')
     .update({ estado: hacia })
     .eq('id', id)
     .eq('estado', pedido.estado)   // si otro lo movió mientras tanto, no pisa
+    .select('id')
 
   if (error) throw new Error(`No se pudo cambiar el estado: ${error.message}`)
+  if (!actualizados || actualizados.length === 0) {
+    throw new Error(`No se pudo marcar como "${hacia}": otra sesión ya cambió el estado de este pedido. Recarga la página e intenta de nuevo.`)
+  }
 }
 
 export async function marcarEnviado(id: string): Promise<void> {
