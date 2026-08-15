@@ -39,6 +39,7 @@ Aplican a **todas** las tareas:
 | `src/app/(app)/pedidos/page.tsx` | Listado de pedidos |
 | `src/components/pedidos/FilaPedido.tsx` | Una fila con sus acciones |
 | `src/components/pedidos/FiltrosPedidos.tsx` | Pestañas y filtros, sobre la URL |
+| `src/components/Paginacion.tsx` | Anterior / Siguiente, compartido por los dos listados |
 | `src/app/(app)/clientes/page.tsx` | Listado de clientes |
 | `src/app/(app)/clientes/[id]/page.tsx` | Ficha del cliente |
 | `src/app/(app)/clientes/[id]/FichaCliente.tsx` | Edición de datos y direcciones |
@@ -448,6 +449,11 @@ git commit -m "feat: barra de navegación común a todas las pantallas"
 Corre contra la base real: lo que verifica —que un borrador sin consecutivo no aparezca— no se puede simular. Crear `src/lib/db/pedidos-consultas.integracion.test.ts`:
 
 ```ts
+// Esta prueba reproduce la consulta en vez de llamar a `listarPedidos`
+// porque ese repositorio lleva `'use server'` y usa `next/headers`, que no
+// existe corriendo Vitest en Node. Lo que se verifica es la garantía a
+// nivel de base —el filtro que excluye los borradores—, que es donde vive
+// el riesgo. Es el mismo patrón que las pruebas del consecutivo.
 import { describe, it, expect } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
 
@@ -709,6 +715,10 @@ git commit -m "feat: repositorio de consultas de pedidos, separado del que escri
 Crear `src/lib/db/cobro.integracion.test.ts`:
 
 ```ts
+// Reproduce el `update` de `marcarPagado` en vez de llamarlo: ese
+// repositorio lleva `'use server'` y usa `next/headers`, ausente en Node.
+// Lo que importa aquí es que la guarda `.neq('estado_pago','pagado')`
+// impida reescribir la fecha, y eso se comprueba contra la base real.
 import { describe, it, expect } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
 
@@ -1051,7 +1061,46 @@ export function FilaPedido({ pedido }: { pedido: Datos }) {
 }
 ```
 
-- [ ] **Paso 3: Escribir la página**
+- [ ] **Paso 3: Escribir la paginación compartida**
+
+La usan este listado y el de clientes (Tarea 8). Crear `src/components/Paginacion.tsx`:
+
+```tsx
+import Link from 'next/link'
+
+export function Paginacion({
+  pagina, paginas, total, sustantivo, enlace,
+}: {
+  pagina: number
+  paginas: number
+  total: number
+  /** Plural: "pedidos", "clientes". */
+  sustantivo: string
+  enlace: (n: number) => string
+}) {
+  if (paginas <= 1) return null
+
+  return (
+    <div className="mt-3 flex items-center gap-2 text-sm">
+      {pagina > 0 && (
+        <Link href={enlace(pagina - 1)} className="rounded border bg-white px-3 py-1">
+          ← Anterior
+        </Link>
+      )}
+      <span className="text-slate-500">
+        Página {pagina + 1} de {paginas} · {total} {sustantivo}
+      </span>
+      {pagina + 1 < paginas && (
+        <Link href={enlace(pagina + 1)} className="rounded border bg-white px-3 py-1">
+          Siguiente →
+        </Link>
+      )}
+    </div>
+  )
+}
+```
+
+- [ ] **Paso 4: Escribir la página**
 
 Crear `src/app/(app)/pedidos/page.tsx`:
 
@@ -1063,6 +1112,7 @@ import { rangoDelDia, rangoEntre } from '@/lib/periodo'
 import { formatearPesos } from '@/lib/dinero'
 import { FiltrosPedidos } from '@/components/pedidos/FiltrosPedidos'
 import { FilaPedido } from '@/components/pedidos/FilaPedido'
+import { Paginacion } from '@/components/Paginacion'
 import type { EstadoPedido } from '@/lib/tipos'
 
 type Params = Promise<Record<string, string | undefined>>
@@ -1147,31 +1197,31 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pa
         </table>
       </div>
 
-      {paginas > 1 && (
-        <div className="mt-3 flex items-center gap-2 text-sm">
-          {pagina > 0 && <Link href={enlacePagina(pagina - 1)} className="rounded border bg-white px-3 py-1">← Anterior</Link>}
-          <span className="text-slate-500">Página {pagina + 1} de {paginas} · {total} pedidos</span>
-          {pagina + 1 < paginas && <Link href={enlacePagina(pagina + 1)} className="rounded border bg-white px-3 py-1">Siguiente →</Link>}
-        </div>
-      )}
+      <Paginacion
+        pagina={pagina} paginas={paginas} total={total}
+        sustantivo="pedidos" enlace={enlacePagina}
+      />
     </div>
   )
 }
 ```
 
-- [ ] **Paso 4: Verificar que compila**
+Con `Paginacion` haciéndose cargo, `Link` ya no se usa directamente en este
+archivo: quitar su import si el linter lo marca.
+
+- [ ] **Paso 5: Verificar que compila**
 
 Ejecutar: `npm run build`
 Esperado: build exitoso, con la ruta `/pedidos` listada.
 
-- [ ] **Paso 5: Probar a mano**
+- [ ] **Paso 6: Probar a mano**
 
 Con `npm run dev`, tomar un pedido nuevo y luego entrar a `/pedidos`. Verificar: aparece en la pestaña Hoy; el total por cobrar de arriba lo incluye; marcar pagado lo saca de "Por cobrar" y el total baja; marcar enviado y luego entregado funciona en ese orden y no al revés; anular exige motivo.
 
-- [ ] **Paso 6: Commit**
+- [ ] **Paso 7: Commit**
 
 ```bash
-git add "src/app/(app)/pedidos/page.tsx" src/components/pedidos/
+git add "src/app/(app)/pedidos/page.tsx" src/components/pedidos/ src/components/Paginacion.tsx
 git commit -m "feat: listado de pedidos con pestañas, filtros y acciones por fila"
 ```
 
@@ -1199,6 +1249,10 @@ git commit -m "feat: listado de pedidos con pestañas, filtros y acciones por fi
 La regla más importante del diseño para esta tarea: editar un cliente no puede reescribir un pedido ya confirmado. Crear `src/lib/db/clientes.integracion.test.ts`:
 
 ```ts
+// Verifica una garantía del modelo de datos —que las columnas congeladas
+// del pedido no dependan de la ficha del cliente—, no una función. Por eso
+// escribe contra la base directamente y no llama a `actualizarCliente`,
+// que además lleva `'use server'` y no corre en Node.
 import { describe, it, expect } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
 
@@ -1392,7 +1446,7 @@ git commit -m "feat: listado, edición y direcciones de clientes"
 - Crear: `src/components/clientes/BuscadorListado.tsx`
 
 **Interfaces:**
-- Consume: `listarClientes` de `@/lib/db/clientes`; `CLIENTES_POR_PAGINA` de `@/lib/db/paginacion`
+- Consume: `listarClientes` de `@/lib/db/clientes`; `CLIENTES_POR_PAGINA` de `@/lib/db/paginacion`; `Paginacion` de `@/components/Paginacion` (creado en la Tarea 6)
 - Produce: la ruta `/clientes`, con `?q=` y `?pagina=`
 
 - [ ] **Paso 1: Escribir el buscador**
@@ -1441,6 +1495,7 @@ import Link from 'next/link'
 import { listarClientes } from '@/lib/db/clientes'
 import { CLIENTES_POR_PAGINA } from '@/lib/db/paginacion'
 import { BuscadorListado } from '@/components/clientes/BuscadorListado'
+import { Paginacion } from '@/components/Paginacion'
 
 type Params = Promise<Record<string, string | undefined>>
 
@@ -1483,13 +1538,10 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
         ))}
       </div>
 
-      {paginas > 1 && (
-        <div className="mt-3 flex items-center gap-2 text-sm">
-          {pagina > 0 && <Link href={enlacePagina(pagina - 1)} className="rounded border bg-white px-3 py-1">← Anterior</Link>}
-          <span className="text-slate-500">Página {pagina + 1} de {paginas} · {total} clientes</span>
-          {pagina + 1 < paginas && <Link href={enlacePagina(pagina + 1)} className="rounded border bg-white px-3 py-1">Siguiente →</Link>}
-        </div>
-      )}
+      <Paginacion
+        pagina={pagina} paginas={paginas} total={total}
+        sustantivo="clientes" enlace={enlacePagina}
+      />
     </div>
   )
 }
