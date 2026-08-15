@@ -275,7 +275,19 @@ export async function marcarPagado(id: string, metodo?: string): Promise<void> {
 
   if (error) throw new Error(`No se pudo marcar pagado: ${error.message}`)
   if (!actualizados || actualizados.length === 0) {
-    throw new Error('No se pudo cobrar: otra sesión anuló este pedido mientras tanto. Recarga la página.')
+    // 0 filas no dice por sí solo cuál de las dos guardas bloqueó el update
+    // (`estado_pago != 'pagado'` o `estado != 'anulado'`), así que hay que
+    // releer el pedido para distinguir entre las dos causas posibles:
+    // que ya lo haya cobrado otra sesión (idempotencia, sin error) o que
+    // otra sesión lo haya anulado mientras tanto (error real).
+    const { data: actual } = await supabase
+      .from('pedidos').select('estado, estado_pago').eq('id', id).single()
+
+    if (actual?.estado_pago === 'pagado') return
+    if (actual?.estado === 'anulado') {
+      throw new Error('No se pudo cobrar: otra sesión anuló este pedido mientras tanto. Recarga la página.')
+    }
+    throw new Error('No se pudo cobrar el pedido. Recarga la página e intenta de nuevo.')
   }
 }
 
