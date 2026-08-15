@@ -18,13 +18,41 @@ function conservar(sp: Record<string, string | undefined>): URLSearchParams {
   return limpios
 }
 
+// La URL de esta pantalla está pensada para compartirse por chat, así que
+// llega como entrada de usuario real: puede traer cualquier cosa. Una
+// página que no sea un entero >= 0 no debe tumbar la pantalla, cae a la
+// primera.
+function sanearPagina(valor: string | undefined): number {
+  const numero = Number(valor)
+  return Number.isInteger(numero) && numero >= 0 ? numero : 0
+}
+
+const FORMATO_FECHA = /^\d{4}-\d{2}-\d{2}$/
+
+/** Exige la forma AAAA-MM-DD y que sea una fecha real (rechaza p.ej.
+ *  "2026-02-30", que `Date` normalizaría en vez de rechazar). Una fecha
+ *  inválida en la URL no debe romper la pantalla: se ignora y `page.tsx`
+ *  cae al comportamiento de la pestaña, en vez de dejar que `rangoEntre`
+ *  reviente con un `RangeError` al construir el ISO. */
+function fechaValida(valor: string | undefined): string | undefined {
+  if (!valor || !FORMATO_FECHA.test(valor)) return undefined
+  const [anio, mes, dia] = valor.split('-').map(Number)
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia))
+  const esReal =
+    fecha.getUTCFullYear() === anio && fecha.getUTCMonth() === mes - 1 && fecha.getUTCDate() === dia
+  return esReal ? valor : undefined
+}
+
 export default async function PaginaPedidos({ searchParams }: { searchParams: Params }) {
   const sp = await searchParams
   const pestana = sp.pestana ?? 'hoy'
-  const pagina = Number(sp.pagina ?? 0)
+  const pagina = sanearPagina(sp.pagina)
+
+  const desde = fechaValida(sp.desde)
+  const hasta = fechaValida(sp.hasta)
 
   const rango =
-    sp.desde && sp.hasta ? rangoEntre(sp.desde, sp.hasta)
+    desde && hasta ? rangoEntre(desde, hasta)
     : pestana === 'hoy' ? rangoDelDia()
     : undefined
 
@@ -59,6 +87,12 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pa
           </span>
           <span className="ml-2 text-xs text-amber-700">
             {porCobrar.pedidos} pedido{porCobrar.pedidos === 1 ? '' : 's'}
+          </span>
+          {/* Este total es de todo lo pendiente, sin filtro de fechas ni
+              pestaña: es plata real que debe verse siempre, aunque la lista
+              de abajo esté filtrada y muestre menos pedidos. */}
+          <span className="block text-[10px] text-amber-600">
+            Total pendiente de siempre, no solo de lo filtrado
           </span>
         </div>
       </div>

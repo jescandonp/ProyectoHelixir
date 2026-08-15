@@ -23,12 +23,26 @@ export function FiltrosPedidos() {
     router.push(`/pedidos?${nuevos.toString()}`)
   }
 
+  // La pestaña es un atajo para un rango de fechas ("hoy", "todos"...), y en
+  // `page.tsx` un rango manual (`desde`/`hasta`) tiene prioridad sobre ella.
+  // Si se deja el rango viejo al cambiar de pestaña, el botón resaltado dice
+  // una cosa y la lista muestra otra. Por eso solo el clic en una pestaña
+  // limpia también el rango manual; escoger fechas a mano sigue intacto.
+  function cambiarPestana(clave: string) {
+    const nuevos = new URLSearchParams(params.toString())
+    nuevos.set('pestana', clave)
+    nuevos.delete('pagina')
+    nuevos.delete('desde')
+    nuevos.delete('hasta')
+    router.push(`/pedidos?${nuevos.toString()}`)
+  }
+
   return (
     <div className="mb-3 space-y-2">
       <div className="flex gap-1">
         {PESTANAS.map(({ clave, texto }) => (
           <button
-            key={clave} type="button" onClick={() => cambiar('pestana', clave)}
+            key={clave} type="button" onClick={() => cambiarPestana(clave)}
             className={`rounded-md px-4 py-1.5 text-sm ${
               pestanaActual === clave
                 ? 'bg-slate-900 font-semibold text-white'

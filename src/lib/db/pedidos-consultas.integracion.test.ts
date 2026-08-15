@@ -51,4 +51,39 @@ describe('el listado esconde los borradores', () => {
       await limpiarClienteDePrueba(cliente!.id)
     }
   }, 30000)
+
+  // Este es el defecto real que se corrigió: 128 filas en la base local
+  // estaban en `estado = 'borrador'` pero ya tenían consecutivo asignado
+  // (`confirmarPedido` cambia el estado y solo después pide el consecutivo,
+  // así que un fallo entre esos dos pasos —o una asignación manual fuera de
+  // ese flujo— deja un pedido así). Filtrar solo por "tiene consecutivo" no
+  // basta para esconderlas; hace falta el `.neq('estado', 'borrador')`
+  // explícito. Si alguien lo revierte en `pedidos-consultas.ts`, esta prueba
+  // debe fallar.
+  it('un borrador con consecutivo ya asignado no aparece ni cuenta', async () => {
+    const { data: cliente } = await supabase
+      .from('clientes').insert({ nombre: 'Prueba borrador con consecutivo' }).select('id').single()
+
+    try {
+      // Se inserta sin `estado`: la columna por defecto es 'borrador', que es
+      // justo el caso que hay que reproducir.
+      const { data: borrador } = await supabase
+        .from('pedidos').insert({ cliente_id: cliente!.id, total: 22222 }).select('id').single()
+      await supabase.rpc('asignar_consecutivo', { p_pedido_id: borrador!.id })
+
+      // Mismos filtros que `listarPedidos`: consecutivo asignado no basta,
+      // también hay que excluir `estado = 'borrador'` explícitamente.
+      const { data, count } = await supabase
+        .from('pedidos')
+        .select('consecutivo, total', { count: 'exact' })
+        .eq('cliente_id', cliente!.id)
+        .not('consecutivo', 'is', null)
+        .neq('estado', 'borrador')
+
+      expect(count).toBe(0)
+      expect(data).toEqual([])
+    } finally {
+      await limpiarClienteDePrueba(cliente!.id)
+    }
+  }, 30000)
 })
