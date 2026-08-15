@@ -1,5 +1,5 @@
 import { listarPedidos, resumenPorCobrar } from '@/lib/db/pedidos-consultas'
-import { POR_PAGINA } from '@/lib/db/paginacion'
+import { POR_PAGINA, sanearPagina } from '@/lib/db/paginacion'
 import { rangoDelDia, rangoEntre } from '@/lib/periodo'
 import { formatearPesos } from '@/lib/dinero'
 import { FiltrosPedidos } from '@/components/pedidos/FiltrosPedidos'
@@ -16,15 +16,6 @@ function conservar(sp: Record<string, string | undefined>): URLSearchParams {
     if (valor) limpios.set(clave, valor)
   }
   return limpios
-}
-
-// La URL de esta pantalla está pensada para compartirse por chat, así que
-// llega como entrada de usuario real: puede traer cualquier cosa. Una
-// página que no sea un entero >= 0 no debe tumbar la pantalla, cae a la
-// primera.
-function sanearPagina(valor: string | undefined): number {
-  const numero = Number(valor)
-  return Number.isInteger(numero) && numero >= 0 ? numero : 0
 }
 
 const FORMATO_FECHA = /^\d{4}-\d{2}-\d{2}$/

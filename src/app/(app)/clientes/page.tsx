@@ -1,19 +1,10 @@
 import Link from 'next/link'
 import { listarClientes } from '@/lib/db/clientes'
-import { CLIENTES_POR_PAGINA } from '@/lib/db/paginacion'
+import { CLIENTES_POR_PAGINA, sanearPagina } from '@/lib/db/paginacion'
 import { BuscadorListado } from '@/components/clientes/BuscadorListado'
 import { Paginacion } from '@/components/Paginacion'
 
 type Params = Promise<Record<string, string | undefined>>
-
-// La URL de esta pantalla puede llegar escrita a mano o compartida por chat,
-// así que llega como entrada de usuario real: puede traer cualquier cosa.
-// Una página que no sea un entero >= 0 no debe tumbar la pantalla, cae a la
-// primera (mismo saneo que usa /pedidos).
-function sanearPagina(valor: string | undefined): number {
-  const numero = Number(valor)
-  return Number.isInteger(numero) && numero >= 0 ? numero : 0
-}
 
 export default async function PaginaClientes({ searchParams }: { searchParams: Params }) {
   const sp = await searchParams
