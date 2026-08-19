@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BOTON_SECUNDARIO } from '@/components/estilos'
 
 export function Paginacion({
   pagina, paginas, total, sustantivo, enlace,
@@ -13,17 +14,17 @@ export function Paginacion({
   if (paginas <= 1) return null
 
   return (
-    <div className="mt-3 flex items-center gap-2 text-sm">
+    <div className="mt-4 flex items-center justify-center gap-3">
       {pagina > 0 && (
-        <Link href={enlace(pagina - 1)} className="rounded border bg-white px-3 py-1">
+        <Link href={enlace(pagina - 1)} className={BOTON_SECUNDARIO}>
           ← Anterior
         </Link>
       )}
-      <span className="text-slate-500">
+      <span className="text-etiqueta-md text-tinta-tenue">
         Página {pagina + 1} de {paginas} · {total} {sustantivo}
       </span>
       {pagina + 1 < paginas && (
-        <Link href={enlace(pagina + 1)} className="rounded border bg-white px-3 py-1">
+        <Link href={enlace(pagina + 1)} className={BOTON_SECUNDARIO}>
           Siguiente →
         </Link>
       )}

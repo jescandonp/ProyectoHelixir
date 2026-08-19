@@ -4,7 +4,9 @@ import { rangoDelDia, rangoEntre } from '@/lib/periodo'
 import { formatearPesos } from '@/lib/dinero'
 import { FiltrosPedidos } from '@/components/pedidos/FiltrosPedidos'
 import { FilaPedido } from '@/components/pedidos/FilaPedido'
+import { TarjetaPedido } from '@/components/pedidos/TarjetaPedido'
 import { Paginacion } from '@/components/Paginacion'
+import { TARJETA } from '@/components/estilos'
 import type { EstadoPedido, EstadoPago } from '@/lib/tipos'
 
 const ESTADOS_PAGO: EstadoPago[] = ['pendiente', 'contraentrega', 'pagado']
@@ -79,24 +81,27 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pa
     return `/pedidos?${nuevos.toString()}`
   }
 
+  const vacio = filas.length === 0
+
   return (
-    <div className="mx-auto max-w-6xl p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h1 className="text-lg font-bold">Pedidos</h1>
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-right">
-          <span className="block text-[10px] font-bold tracking-wider text-amber-700">
-            POR COBRAR
+    <div className="mx-auto max-w-6xl px-4 py-6 md:px-10">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <h1 className="font-titulo text-titulo-lg-mobile text-tinta md:text-titulo-lg">Pedidos</h1>
+
+        {/* Este total es de todo lo pendiente, sin filtro de fechas ni
+            pestaña: es plata real que debe verse siempre, aunque la lista
+            de abajo esté filtrada y muestre menos pedidos. */}
+        <div className={`${TARJETA} border border-borde-suave px-5 py-3 text-right`}>
+          <span className="block text-etiqueta-md uppercase tracking-[0.08em] text-terciario">
+            Por cobrar
           </span>
-          <span className="text-lg font-extrabold tabular-nums text-amber-800">
+          <span className="font-titulo text-titulo-md tabular-nums text-tinta">
             {formatearPesos(porCobrar.total)}
           </span>
-          <span className="ml-2 text-xs text-amber-700">
+          <span className="ml-2 text-etiqueta-md text-tinta-tenue">
             {porCobrar.pedidos} pedido{porCobrar.pedidos === 1 ? '' : 's'}
           </span>
-          {/* Este total es de todo lo pendiente, sin filtro de fechas ni
-              pestaña: es plata real que debe verse siempre, aunque la lista
-              de abajo esté filtrada y muestre menos pedidos. */}
-          <span className="block text-[10px] text-amber-600">
+          <span className="mt-0.5 block text-etiqueta-md text-tinta-suave">
             Total pendiente de siempre, no solo de lo filtrado
           </span>
         </div>
@@ -104,29 +109,41 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pa
 
       <FiltrosPedidos />
 
-      <div className="overflow-x-auto rounded-lg border bg-white">
-        <table className="w-full">
-          <thead className="border-b bg-slate-50 text-left text-[10px] font-bold tracking-wider text-slate-500">
-            <tr>
-              <th className="px-2 py-2">ORDEN</th>
-              <th className="px-2 py-2">FECHA</th>
-              <th className="px-2 py-2">CLIENTE</th>
-              <th className="px-2 py-2 text-right">KG</th>
-              <th className="px-2 py-2 text-right">TOTAL</th>
-              <th className="px-2 py-2">ESTADO</th>
-              <th className="px-2 py-2">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filas.length === 0 && (
-              <tr><td colSpan={7} className="px-2 py-6 text-center text-sm text-slate-400">
-                No hay pedidos con esos filtros
-              </td></tr>
-            )}
-            {filas.map((pedido) => <FilaPedido key={pedido.id} pedido={pedido} />)}
-          </tbody>
-        </table>
-      </div>
+      {vacio && (
+        <p className={`${TARJETA} px-4 py-10 text-center text-cuerpo-md text-tinta-tenue`}>
+          No hay pedidos con esos filtros
+        </p>
+      )}
+
+      {/* Dos presentaciones del mismo listado: siete columnas no caben en un
+          celular, y una lista de tarjetas se vuelve ilegible en pantalla
+          ancha. Solo una de las dos está en el DOM visible a la vez. */}
+      {!vacio && (
+        <>
+          <div className={`${TARJETA} hidden overflow-x-auto md:block`}>
+            <table className="w-full">
+              <thead className="border-b border-borde-suave bg-tarjeta-baja text-left text-etiqueta-md uppercase tracking-[0.08em] text-tinta-suave">
+                <tr>
+                  <th className="px-3 py-3 font-semibold">Orden</th>
+                  <th className="px-3 py-3 font-semibold">Fecha</th>
+                  <th className="px-3 py-3 font-semibold">Cliente</th>
+                  <th className="px-3 py-3 text-right font-semibold">Kg</th>
+                  <th className="px-3 py-3 text-right font-semibold">Total</th>
+                  <th className="px-3 py-3 font-semibold">Estado</th>
+                  <th className="px-3 py-3 font-semibold">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filas.map((pedido) => <FilaPedido key={pedido.id} pedido={pedido} />)}
+              </tbody>
+            </table>
+          </div>
+
+          <ul className={`${TARJETA} overflow-hidden md:hidden`}>
+            {filas.map((pedido) => <TarjetaPedido key={pedido.id} pedido={pedido} />)}
+          </ul>
+        </>
+      )}
 
       <Paginacion
         pagina={pagina} paginas={paginas} total={total}

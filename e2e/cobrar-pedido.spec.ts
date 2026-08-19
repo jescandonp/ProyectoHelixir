@@ -34,9 +34,9 @@ test.afterEach(async () => {
 
 test('toma un pedido, lo cobra desde la lista y el recibo sale pagado', async ({ page }) => {
   await page.goto('/ingresar')
-  await page.getByPlaceholder('Correo').fill(process.env.E2E_CORREO!)
-  await page.getByPlaceholder('Contraseña').fill(process.env.E2E_CLAVE!)
-  await page.getByRole('button', { name: 'Entrar' }).click()
+  await page.getByLabel('Correo electrónico').fill(process.env.E2E_CORREO!)
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE!)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
   await expect(page).toHaveURL(/\/pedidos\/nuevo/)
 
   // Un pedido nuevo con un cliente nuevo
