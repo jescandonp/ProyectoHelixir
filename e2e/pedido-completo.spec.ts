@@ -33,13 +33,11 @@ test('toma un pedido de punta a punta y genera recibo y rótulo', async ({ page 
 
   await expect(page).toHaveURL(/\/pedidos\/.+\/documentos/)
 
-  // El recibo salió con consecutivo, total en letras y aviso de frío
+  // El recibo salió con consecutivo y total en letras
   await expect(page.getByText(/ORDEN No\./)).toBeVisible()
   await expect(page.getByText(/M\/cte/)).toBeVisible()
-  await expect(page.getByText(/CONSERVAR EN FRÍO/)).toBeVisible()
 
   // El rótulo lleva el código de cliente, no la cédula
   await page.getByRole('button', { name: /Rótulo/ }).click()
   await expect(page.getByText(/^CL-\d{4}$/)).toBeVisible()
-  await expect(page.getByText(/CONGELADO/)).toBeVisible()
 })

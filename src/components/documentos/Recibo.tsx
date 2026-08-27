@@ -127,8 +127,6 @@ export function Recibo({ pedido, ajustes }: { pedido: PedidoCompleto; ajustes: A
 
       <div className="my-2 border-t-2 border-dashed border-black" />
       <div className="text-center text-[12px] leading-tight">
-        <strong>❄ CONSERVAR EN FRÍO</strong>
-        <br />
         {ajustes.pieRecibo}
       </div>
     </div>

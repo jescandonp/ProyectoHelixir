@@ -33,12 +33,7 @@ export function RotuloNacional({ pedido, ajustes }: { pedido: PedidoCompleto; aj
       <div className="flex-1" />
 
       <div className="mt-2 border-[3px] border-black p-1.5 text-center">
-        <div className="text-[13px] font-extrabold tracking-wide">❄ PRODUCTO CONGELADO</div>
-        <div className="mt-0.5 text-[10px] leading-tight">
-          MANTENER EN CADENA DE FRÍO
-          <br />
-          ENTREGA PRIORITARIA · NO DEMORAR
-        </div>
+        <div className="text-[10px] leading-tight">ENTREGA PRIORITARIA · NO DEMORAR</div>
       </div>
 
       <div className="mt-2 flex items-end justify-between border-t border-black pt-1.5">
