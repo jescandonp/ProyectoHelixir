@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import type { ItemPedido, Totales, TipoEntrega, EstadoPago } from '@/lib/tipos'
 import { formatearPesos, formatearPesosSinSimbolo } from '@/lib/dinero'
 import { calcularSubtotalItem } from '@/lib/pedidos/calculos'
@@ -12,6 +13,7 @@ interface Props {
   valorDomicilio: number
   tipoEntrega: TipoEntrega
   transportadora: string
+  transportadoras: { id: string; nombre: string }[]
   estadoPago: EstadoPago
   observaciones: string
   problemas: string[]
@@ -34,6 +36,8 @@ const PAGOS: { estado: EstadoPago; texto: string }[] = [
   { estado: 'contraentrega', texto: 'Contraent.' },
   { estado: 'pagado', texto: 'Pagado' },
 ]
+
+const OTRA_TRANSPORTADORA = '__otra__'
 
 /** Un grupo de opciones excluyentes, del tamaño de un dedo. Lo usan tanto la
  *  entrega como el estado de pago para que las dos filas se lean igual. */
@@ -66,6 +70,23 @@ function Segmentado<T extends string>({
 
 export function ResumenPedido(p: Props) {
   const bloqueado = p.problemas.length > 0 || p.confirmando
+  const [modoOtra, setModoOtra] = useState(false)
+
+  useEffect(() => {
+    if (p.transportadora && !p.transportadoras.some((t) => t.nombre === p.transportadora)) {
+      setModoOtra(true)
+    }
+  }, [p.transportadora, p.transportadoras])
+
+  function alElegirTransportadora(valor: string) {
+    if (valor === OTRA_TRANSPORTADORA) {
+      setModoOtra(true)
+      p.onCambiarTransportadora('')
+    } else {
+      setModoOtra(false)
+      p.onCambiarTransportadora(valor)
+    }
+  }
 
   return (
     <div className={`${TARJETA} overflow-hidden`}>
@@ -123,10 +144,28 @@ export function ResumenPedido(p: Props) {
             valor={p.tipoEntrega} onCambiar={p.onCambiarEntrega}
           />
           {p.tipoEntrega === 'nacional' && (
-            <input
-              value={p.transportadora} onChange={(e) => p.onCambiarTransportadora(e.target.value)}
-              placeholder="Transportadora" className={`${CAMPO} mt-2`}
-            />
+            <div className="mt-2 space-y-2">
+              <select
+                value={modoOtra ? OTRA_TRANSPORTADORA : p.transportadora}
+                onChange={(e) => alElegirTransportadora(e.target.value)}
+                aria-label="Transportadora"
+                className={`${CAMPO} bg-tarjeta`}
+              >
+                <option value="" disabled>Selecciona transportadora…</option>
+                {p.transportadoras.map((t) => (
+                  <option key={t.id} value={t.nombre}>{t.nombre}</option>
+                ))}
+                <option value={OTRA_TRANSPORTADORA}>Otra…</option>
+              </select>
+              {modoOtra && (
+                <input
+                  value={p.transportadora}
+                  onChange={(e) => p.onCambiarTransportadora(e.target.value)}
+                  placeholder="Nombre de la transportadora"
+                  className={CAMPO}
+                />
+              )}
+            </div>
           )}
         </div>
 
