@@ -30,10 +30,6 @@ export function RotuloNacional({ pedido, ajustes }: { pedido: PedidoCompleto; aj
 
       <div className="mt-2.5 text-[16px] font-extrabold">📞 {pedido.clienteTelefono}</div>
 
-      {pedido.transportadora && (
-        <div className="mt-2 text-[12px] font-bold tracking-wide">TRANSPORTADORA: {pedido.transportadora}</div>
-      )}
-
       <div className="flex-1" />
 
       <div className="mt-2 border-[3px] border-black p-1.5 text-center">
