@@ -88,3 +88,46 @@ describe('el listado esconde los borradores', () => {
     }
   }, 30000)
 })
+
+describe('exportar trae todas las filas del filtro, sin paginar', () => {
+  it('con más de una página de datos sembrados, trae todas', async () => {
+    const { data: cliente } = await supabase
+      .from('clientes').insert({ nombre: 'Prueba exportar todas' }).select('id').single()
+
+    try {
+      // 3 pedidos reales del mismo cliente: de sobra para distinguir "todas"
+      // de "una página", sin sembrar cientos de filas solo para la prueba.
+      // `estado: 'confirmado'` es explícito a propósito: `asignar_consecutivo`
+      // solo asigna el consecutivo, no cambia el estado (es justo lo que
+      // prueba el segundo test de este archivo, "un borrador con consecutivo
+      // ya asignado no aparece ni cuenta"), así que sin esto los tres
+      // quedarían en `borrador` y `filtrarPedidosReales` los excluiría a
+      // todos, no solo a la paginación.
+      const ids: string[] = []
+      for (let i = 0; i < 3; i++) {
+        const { data: pedido } = await supabase
+          .from('pedidos')
+          .insert({ cliente_id: cliente!.id, estado: 'confirmado', total: 10000 + i })
+          .select('id').single()
+        await supabase.rpc('asignar_consecutivo', { p_pedido_id: pedido!.id })
+        ids.push(pedido!.id)
+      }
+
+      const { data, error } = await filtrarPedidosReales(
+        supabase
+          .from('pedidos')
+          .select('id, total')
+          .eq('cliente_id', cliente!.id),
+      )
+      if (error) throw new Error(`Falló la consulta: ${error.message}`)
+
+      expect(data).toHaveLength(3)
+      expect(data!.map((f) => f.id).sort()).toEqual([...ids].sort())
+    } finally {
+      const { error: errorPedidos } = await supabase.from('pedidos').delete().eq('cliente_id', cliente!.id)
+      if (errorPedidos) throw new Error(`No se pudieron limpiar los pedidos de prueba: ${errorPedidos.message}`)
+      const { error: errorCliente } = await supabase.from('clientes').delete().eq('id', cliente!.id)
+      if (errorCliente) throw new Error(`No se pudo limpiar el cliente de prueba: ${errorCliente.message}`)
+    }
+  }, 30000)
+})

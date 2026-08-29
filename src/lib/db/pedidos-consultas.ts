@@ -53,38 +53,61 @@ function mapearFila(f: any): FilaPedido {
   }
 }
 
+/** Encadena los filtros comunes a `listarPedidos` y `listarPedidosParaExportar`.
+ *  `T` no lleva restricción de tipo por la misma razón documentada en
+ *  `filtrarPedidosReales` (filtros-pedidos.ts): las firmas sobrecargadas del
+ *  `PostgrestFilterBuilder` real disparan "Type instantiation is excessively
+ *  deep" si TypeScript intenta comprobarlas contra una restricción genérica. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function aplicarFiltros<T>(consulta: T, filtros: Omit<FiltrosPedidos, 'pagina'>): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let c = consulta as any
+  if (filtros.rango) c = c.gte('fecha', filtros.rango.desde).lt('fecha', filtros.rango.hasta)
+  if (filtros.estado) c = c.eq('estado', filtros.estado)
+  if (filtros.estadoPago) c = c.eq('estado_pago', filtros.estadoPago)
+  if (filtros.soloPorCobrar) c = c.neq('estado_pago', 'pagado').neq('estado', 'anulado')
+  if (filtros.clienteId) c = c.eq('cliente_id', filtros.clienteId)
+  if (filtros.asesorId) c = c.eq('asesor_id', filtros.asesorId)
+  return c as T
+}
+
 export async function listarPedidos(filtros: FiltrosPedidos): Promise<PaginaPedidos> {
   const supabase = await crearClienteServidor()
   const pagina = filtros.pagina ?? 0
   const primera = pagina * POR_PAGINA
 
-  let consulta = filtrarPedidosReales(
-    supabase
-      .from('pedidos')
-      .select(COLUMNAS, { count: 'exact' }),
+  const consulta = aplicarFiltros(
+    filtrarPedidosReales(supabase.from('pedidos').select(COLUMNAS, { count: 'exact' })),
+    filtros,
   )
-    // Dos pedidos pueden compartir el mismo instante en `fecha`; sin un
-    // desempate por `id` el orden entre páginas no queda determinado y una
-    // fila puede repetirse o desaparecer al paginar.
     .order('fecha', { ascending: false })
     .order('id', { ascending: false })
     .range(primera, primera + POR_PAGINA - 1)
-
-  if (filtros.rango) {
-    consulta = consulta.gte('fecha', filtros.rango.desde).lt('fecha', filtros.rango.hasta)
-  }
-  if (filtros.estado) consulta = consulta.eq('estado', filtros.estado)
-  if (filtros.estadoPago) consulta = consulta.eq('estado_pago', filtros.estadoPago)
-  if (filtros.soloPorCobrar) {
-    consulta = consulta.neq('estado_pago', 'pagado').neq('estado', 'anulado')
-  }
-  if (filtros.clienteId) consulta = consulta.eq('cliente_id', filtros.clienteId)
-  if (filtros.asesorId) consulta = consulta.eq('asesor_id', filtros.asesorId)
 
   const { data, error, count } = await consulta
   if (error) throw new Error(`No se pudo leer la lista de pedidos: ${error.message}`)
 
   return { filas: (data ?? []).map(mapearFila), total: count ?? 0 }
+}
+
+/** Igual que `listarPedidos`, pero sin `.range()`: trae todas las filas que
+ *  cumplen el filtro. La usa la exportación a Excel/PDF, donde "el resultado
+ *  filtrado" tiene que ser todo, no la página de 50 que se ve en pantalla. */
+export async function listarPedidosParaExportar(
+  filtros: Omit<FiltrosPedidos, 'pagina'>,
+): Promise<FilaPedido[]> {
+  const supabase = await crearClienteServidor()
+
+  const consulta = aplicarFiltros(
+    filtrarPedidosReales(supabase.from('pedidos').select(COLUMNAS)),
+    filtros,
+  )
+    .order('fecha', { ascending: false })
+    .order('id', { ascending: false })
+
+  const { data, error } = await consulta
+  if (error) throw new Error(`No se pudo leer los pedidos para exportar: ${error.message}`)
+  return (data ?? []).map(mapearFila)
 }
 
 /** PostgREST no suma sin una función SQL, y meter la lógica del negocio en
