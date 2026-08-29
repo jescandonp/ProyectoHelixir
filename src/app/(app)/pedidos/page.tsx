@@ -7,15 +7,8 @@ import { FilaPedido } from '@/components/pedidos/FilaPedido'
 import { TarjetaPedido } from '@/components/pedidos/TarjetaPedido'
 import { Paginacion } from '@/components/Paginacion'
 import { TARJETA } from '@/components/estilos'
-import type { EstadoPedido, EstadoPago } from '@/lib/tipos'
-
-const ESTADOS_PAGO: EstadoPago[] = ['pendiente', 'contraentrega', 'pagado']
-
-/** Un valor fuera de esta lista (URL retocada a mano) se ignora en vez de
- *  romper la pantalla, igual que ya hace `fechaValida` con las fechas. */
-function estadoPagoValido(valor: string | undefined): EstadoPago | undefined {
-  return ESTADOS_PAGO.includes(valor as EstadoPago) ? (valor as EstadoPago) : undefined
-}
+import type { EstadoPedido } from '@/lib/tipos'
+import { fechaValida, estadoPagoValido } from '@/lib/pedidos/filtros-url'
 
 type Params = Promise<Record<string, string | undefined>>
 
@@ -26,22 +19,6 @@ function conservar(sp: Record<string, string | undefined>): URLSearchParams {
     if (valor) limpios.set(clave, valor)
   }
   return limpios
-}
-
-const FORMATO_FECHA = /^\d{4}-\d{2}-\d{2}$/
-
-/** Exige la forma AAAA-MM-DD y que sea una fecha real (rechaza p.ej.
- *  "2026-02-30", que `Date` normalizaría en vez de rechazar). Una fecha
- *  inválida en la URL no debe romper la pantalla: se ignora y `page.tsx`
- *  cae al comportamiento de la pestaña, en vez de dejar que `rangoEntre`
- *  reviente con un `RangeError` al construir el ISO. */
-function fechaValida(valor: string | undefined): string | undefined {
-  if (!valor || !FORMATO_FECHA.test(valor)) return undefined
-  const [anio, mes, dia] = valor.split('-').map(Number)
-  const fecha = new Date(Date.UTC(anio, mes - 1, dia))
-  const esReal =
-    fecha.getUTCFullYear() === anio && fecha.getUTCMonth() === mes - 1 && fecha.getUTCDate() === dia
-  return esReal ? valor : undefined
 }
 
 export default async function PaginaPedidos({ searchParams }: { searchParams: Params }) {
