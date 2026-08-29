@@ -76,7 +76,9 @@ test('pedido nacional con transportadora de la lista', async ({ page }) => {
   await page.getByRole('button', { name: /Generar recibo/ }).click()
 
   await expect(page).toHaveURL(/\/pedidos\/.+\/documentos/)
-  await page.getByRole('button', { name: /Rótulo nacional/ }).click()
+  // El recibo (pestaña por defecto) muestra la transportadora; el rótulo
+  // nacional, a propósito, no — lo lee la propia transportadora (§7.3 del
+  // diseño original), así que no repite ahí su propio nombre.
   await expect(page.getByText('Servientrega')).toBeVisible()
 })
 
@@ -106,6 +108,7 @@ test('pedido nacional con transportadora "Otra"', async ({ page }) => {
   await page.getByRole('button', { name: /Generar recibo/ }).click()
 
   await expect(page).toHaveURL(/\/pedidos\/.+\/documentos/)
-  await page.getByRole('button', { name: /Rótulo nacional/ }).click()
+  // Igual que en el caso anterior: la transportadora sale en el recibo,
+  // nunca en el rótulo nacional (§7.3 del diseño original).
   await expect(page.getByText('Envíos del Valle')).toBeVisible()
 })
