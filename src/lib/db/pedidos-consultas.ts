@@ -58,7 +58,6 @@ function mapearFila(f: any): FilaPedido {
  *  `filtrarPedidosReales` (filtros-pedidos.ts): las firmas sobrecargadas del
  *  `PostgrestFilterBuilder` real disparan "Type instantiation is excessively
  *  deep" si TypeScript intenta comprobarlas contra una restricción genérica. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function aplicarFiltros<T>(consulta: T, filtros: Omit<FiltrosPedidos, 'pagina'>): T {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let c = consulta as any
