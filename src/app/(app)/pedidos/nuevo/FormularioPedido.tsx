@@ -21,9 +21,13 @@ import type {
   Cliente, Direccion, ItemPedido, Producto, TipoEntrega, EstadoPago,
 } from '@/lib/tipos'
 
-interface Props { productos: Producto[]; valorDomicilioDefault: number }
+interface Props {
+  productos: Producto[]
+  transportadoras: { id: string; nombre: string }[]
+  valorDomicilioDefault: number
+}
 
-export function FormularioPedido({ productos, valorDomicilioDefault }: Props) {
+export function FormularioPedido({ productos, transportadoras, valorDomicilioDefault }: Props) {
   const router = useRouter()
 
   const [cliente, setCliente] = useState<Cliente | null>(null)
@@ -235,6 +239,7 @@ export function FormularioPedido({ productos, valorDomicilioDefault }: Props) {
             <ResumenPedido
               items={items} totales={totales} valorDomicilio={valorDomicilio}
               tipoEntrega={tipoEntrega} transportadora={transportadora}
+              transportadoras={transportadoras}
               estadoPago={estadoPago} observaciones={observaciones}
               problemas={problemas} confirmando={confirmando}
               onCambiarDomicilio={setValorDomicilio}
