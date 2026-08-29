@@ -240,9 +240,11 @@ describe('ResumenPedido — transportadora', () => {
   })
 
   it('al elegir "Otra", muestra un campo de texto libre', () => {
-    render(<ResumenPedido {...propsBase()} />)
+    const onCambiarTransportadora = vi.fn()
+    render(<ResumenPedido {...propsBase({ onCambiarTransportadora })} />)
     fireEvent.change(screen.getByLabelText('Transportadora'), { target: { value: '__otra__' } })
-    expect(screen.getByPlaceholderText('Nombre de la transportadora')).toBeDefined()
+    expect(screen.getByPlaceholderText('Nombre de la transportadora')).toBeInTheDocument()
+    expect(onCambiarTransportadora).toHaveBeenCalledWith('')
   })
 
   it('escribir en el campo libre avisa al padre con el texto escrito', () => {
@@ -285,25 +287,28 @@ const OTRA_TRANSPORTADORA = '__otra__'
 ```
 
 ```tsx
-// Dentro de ResumenPedido, antes del return, agregar el estado y el efecto:
-  const [modoOtra, setModoOtra] = useState(false)
-
-  useEffect(() => {
-    if (p.transportadora && !p.transportadoras.some((t) => t.nombre === p.transportadora)) {
-      setModoOtra(true)
-    }
-  }, [p.transportadora, p.transportadoras])
+// Dentro de ResumenPedido, antes del return, agregar el estado derivado:
+  const [otraForzada, setOtraForzada] = useState(false)
+  const enLista = p.transportadoras.some((t) => t.nombre === p.transportadora)
+  const modoOtra = otraForzada || (!!p.transportadora && !enLista)
 
   function alElegirTransportadora(valor: string) {
     if (valor === OTRA_TRANSPORTADORA) {
-      setModoOtra(true)
+      setOtraForzada(true)
       p.onCambiarTransportadora('')
     } else {
-      setModoOtra(false)
+      setOtraForzada(false)
       p.onCambiarTransportadora(valor)
     }
   }
 ```
+
+`modoOtra` se deriva de las props y de `otraForzada` (si el usuario eligió
+"Otra" explícitamente en el desplegable) — no hace falta un `useEffect` para
+sincronizar estado con props: es "modo otra" siempre que el usuario lo forzó,
+o que la transportadora entrante no está en la lista. Esto también evita el
+parpadeo del primer render con un borrador restaurado (el `<select>` no llega
+a mostrar un valor que no coincide con ninguna `<option>`).
 
 ```tsx
 // Reemplaza el <input> de transportadora (líneas 125-130):
@@ -326,6 +331,7 @@ const OTRA_TRANSPORTADORA = '__otra__'
                   value={p.transportadora}
                   onChange={(e) => p.onCambiarTransportadora(e.target.value)}
                   placeholder="Nombre de la transportadora"
+                  aria-label="Nombre de la transportadora"
                   className={CAMPO}
                 />
               )}
@@ -333,10 +339,10 @@ const OTRA_TRANSPORTADORA = '__otra__'
           )}
 ```
 
-Agregar `useEffect` al import de React ya existente:
+Agregar `useState` al import de React ya existente:
 
 ```typescript
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 ```
 
 (el archivo hoy no importa hooks porque no tenía estado propio — se agrega esta línea al inicio del archivo, junto a los demás imports).

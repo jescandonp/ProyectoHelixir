@@ -13,6 +13,7 @@ import { validarParaConfirmar } from '@/lib/pedidos/validacion'
 import { crearBorrador, guardarBorrador, confirmarPedido } from '@/lib/db/pedidos'
 import { listarPedidosDeHoyDelCliente } from '@/lib/db/pedidos-consultas'
 import { buscarDuplicado, type PedidoReciente } from '@/lib/pedidos/duplicados'
+import type { Transportadora } from '@/lib/db/transportadoras'
 import {
   TARJETA, ETIQUETA_SECCION, CAMPO_CHICO, CHIP_CODIGO, BOTON_FANTASMA,
   AVISO_ERROR, AVISO_ATENCION,
@@ -23,7 +24,7 @@ import type {
 
 interface Props {
   productos: Producto[]
-  transportadoras: { id: string; nombre: string }[]
+  transportadoras: Transportadora[]
   valorDomicilioDefault: number
 }
 

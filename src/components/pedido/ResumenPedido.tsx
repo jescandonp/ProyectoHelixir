@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { ItemPedido, Totales, TipoEntrega, EstadoPago } from '@/lib/tipos'
 import { formatearPesos, formatearPesosSinSimbolo } from '@/lib/dinero'
 import { calcularSubtotalItem } from '@/lib/pedidos/calculos'
 import { TARJETA, ETIQUETA_SECCION, CAMPO, BOTON_PRIMARIO, AVISO_ERROR } from '@/components/estilos'
 import { IconoBolsa, IconoTienda, IconoCamion } from '@/components/iconos'
+import type { Transportadora } from '@/lib/db/transportadoras'
 
 interface Props {
   items: ItemPedido[]
@@ -13,7 +14,7 @@ interface Props {
   valorDomicilio: number
   tipoEntrega: TipoEntrega
   transportadora: string
-  transportadoras: { id: string; nombre: string }[]
+  transportadoras: Transportadora[]
   estadoPago: EstadoPago
   observaciones: string
   problemas: string[]
@@ -70,20 +71,16 @@ function Segmentado<T extends string>({
 
 export function ResumenPedido(p: Props) {
   const bloqueado = p.problemas.length > 0 || p.confirmando
-  const [modoOtra, setModoOtra] = useState(false)
-
-  useEffect(() => {
-    if (p.transportadora && !p.transportadoras.some((t) => t.nombre === p.transportadora)) {
-      setModoOtra(true)
-    }
-  }, [p.transportadora, p.transportadoras])
+  const [otraForzada, setOtraForzada] = useState(false)
+  const enLista = p.transportadoras.some((t) => t.nombre === p.transportadora)
+  const modoOtra = otraForzada || (!!p.transportadora && !enLista)
 
   function alElegirTransportadora(valor: string) {
     if (valor === OTRA_TRANSPORTADORA) {
-      setModoOtra(true)
+      setOtraForzada(true)
       p.onCambiarTransportadora('')
     } else {
-      setModoOtra(false)
+      setOtraForzada(false)
       p.onCambiarTransportadora(valor)
     }
   }
@@ -162,6 +159,7 @@ export function ResumenPedido(p: Props) {
                   value={p.transportadora}
                   onChange={(e) => p.onCambiarTransportadora(e.target.value)}
                   placeholder="Nombre de la transportadora"
+                  aria-label="Nombre de la transportadora"
                   className={CAMPO}
                 />
               )}

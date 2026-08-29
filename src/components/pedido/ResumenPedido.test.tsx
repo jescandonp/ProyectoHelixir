@@ -29,9 +29,9 @@ describe('ResumenPedido — transportadora', () => {
   it('lista las transportadoras activas como opciones en entrega nacional', () => {
     render(<ResumenPedido {...propsBase()} />)
     const select = screen.getByLabelText('Transportadora')
-    expect(screen.getByRole('option', { name: 'Interrapidísimo' })).toBeDefined()
-    expect(screen.getByRole('option', { name: 'Servientrega' })).toBeDefined()
-    expect(select).toBeDefined()
+    expect(screen.getByRole('option', { name: 'Interrapidísimo' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Servientrega' })).toBeInTheDocument()
+    expect(select).toBeInTheDocument()
   })
 
   it('al elegir una transportadora de la lista, avisa al padre con su nombre', () => {
@@ -42,9 +42,11 @@ describe('ResumenPedido — transportadora', () => {
   })
 
   it('al elegir "Otra", muestra un campo de texto libre', () => {
-    render(<ResumenPedido {...propsBase()} />)
+    const onCambiarTransportadora = vi.fn()
+    render(<ResumenPedido {...propsBase({ onCambiarTransportadora })} />)
     fireEvent.change(screen.getByLabelText('Transportadora'), { target: { value: '__otra__' } })
-    expect(screen.getByPlaceholderText('Nombre de la transportadora')).toBeDefined()
+    expect(screen.getByPlaceholderText('Nombre de la transportadora')).toBeInTheDocument()
+    expect(onCambiarTransportadora).toHaveBeenCalledWith('')
   })
 
   it('escribir en el campo libre avisa al padre con el texto escrito', () => {
