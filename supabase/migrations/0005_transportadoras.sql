@@ -16,5 +16,6 @@ alter table transportadoras enable row level security;
 create policy "autenticados leen y escriben transportadoras" on transportadoras for all to authenticated using (true) with check (true);
 grant select, insert, update, delete on transportadoras to authenticated;
 
--- service_role acceso total (ya lo tiene por defecto vía GRANT ALL)
+-- Necesario: el GRANT ALL de 0003_rls.sql solo alcanzó a las tablas que
+-- existían cuando corrió esa migración, no a esta, creada después.
 grant all on transportadoras to service_role;
