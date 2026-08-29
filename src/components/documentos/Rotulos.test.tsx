@@ -88,4 +88,9 @@ describe('RotuloNacional', () => {
     render(<RotuloNacional pedido={nacional} ajustes={ajustes} />)
     expect(screen.getByText(/ENTREGA PRIORITARIA/)).toBeDefined()
   })
+
+  it('muestra el nombre de la transportadora', () => {
+    render(<RotuloNacional pedido={nacional} ajustes={ajustes} />)
+    expect(screen.getByText(/ForEnvíos/)).toBeDefined()
+  })
 })
