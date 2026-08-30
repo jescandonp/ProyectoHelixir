@@ -14,6 +14,7 @@
 - El módulo de filtros de URL (`fechaValida`, `estadoPagoValido`) es puro y compartido entre `/pedidos` (la pantalla) y `/api/pedidos/exportar` (la ruta): un cambio en cómo se valida una fecha de la URL debe aplicar igual en los dos sitios, no en una copia.
 - La exportación nunca pagina: siempre trae todo lo que cumple el filtro activo.
 - Los nombres de archivo descargado usan la fecha de hoy en formato `AAAA-MM-DD`.
+- `node_modules/exceljs/index.d.ts` declara `declare interface Buffer extends ArrayBuffer {}`, que se fusiona con el `Buffer` global de `@types/node` y rompe `npm run build` (TS2345) en cualquier archivo que compare un `Buffer` real contra la firma de `exceljs`. Ese type-check solo corre en el build completo, no en `npm test` ni en `npx eslint` por separado — por eso cualquier tarea que use `exceljs` (o que sea la primera en correr `npm run build` después de que exista ese código) debe incluir `npm run build` en su verificación, no solo test+lint.
 
 ---
 
@@ -372,7 +373,13 @@ describe('generarExcelPedidos', () => {
   it('arma una hoja "Pedidos" con encabezado y una fila por pedido', async () => {
     const buffer = await generarExcelPedidos([FILA])
     const libro = new ExcelJS.Workbook()
-    await libro.xlsx.load(buffer)
+    // exceljs declara `Buffer` global a su manera (extends ArrayBuffer) en
+    // index.d.ts, lo que rompe la compatibilidad estructural con el `Buffer`
+    // real de @types/node en TypeScript 5.9 — un bug conocido de sus tipos,
+    // no del código. `Buffer.from()` de @types/node ya garantiza en runtime
+    // que esto es un Buffer válido.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await libro.xlsx.load(buffer as any)
     const hoja = libro.getWorksheet('Pedidos')!
 
     expect(hoja.getRow(1).getCell(1).value).toBe('Orden')
@@ -385,7 +392,13 @@ describe('generarExcelPedidos', () => {
   it('con ciudad nula, deja la celda vacía en vez de lanzar', async () => {
     const buffer = await generarExcelPedidos([{ ...FILA, dirCiudad: null }])
     const libro = new ExcelJS.Workbook()
-    await libro.xlsx.load(buffer)
+    // exceljs declara `Buffer` global a su manera (extends ArrayBuffer) en
+    // index.d.ts, lo que rompe la compatibilidad estructural con el `Buffer`
+    // real de @types/node en TypeScript 5.9 — un bug conocido de sus tipos,
+    // no del código. `Buffer.from()` de @types/node ya garantiza en runtime
+    // que esto es un Buffer válido.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await libro.xlsx.load(buffer as any)
     const hoja = libro.getWorksheet('Pedidos')!
     expect(hoja.getRow(2).getCell(4).value).toBeNull()
   })
@@ -393,7 +406,13 @@ describe('generarExcelPedidos', () => {
   it('con una lista vacía, arma solo el encabezado', async () => {
     const buffer = await generarExcelPedidos([])
     const libro = new ExcelJS.Workbook()
-    await libro.xlsx.load(buffer)
+    // exceljs declara `Buffer` global a su manera (extends ArrayBuffer) en
+    // index.d.ts, lo que rompe la compatibilidad estructural con el `Buffer`
+    // real de @types/node en TypeScript 5.9 — un bug conocido de sus tipos,
+    // no del código. `Buffer.from()` de @types/node ya garantiza en runtime
+    // que esto es un Buffer válido.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await libro.xlsx.load(buffer as any)
     const hoja = libro.getWorksheet('Pedidos')!
     expect(hoja.rowCount).toBe(1)
   })
