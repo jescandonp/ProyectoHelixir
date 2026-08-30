@@ -45,10 +45,10 @@ describe('Recibo', () => {
     expect(screen.getByText(/10 Kg/)).toBeDefined()
   })
 
-  it('enmascara la cédula dejando solo los primeros cuatro dígitos', () => {
+  it('muestra la cédula completa del cliente', () => {
     render(<Recibo pedido={pedido} ajustes={ajustes} />)
-    expect(screen.getByText('1017xxxxxx')).toBeDefined()
-    expect(screen.queryByText('1017456789')).toBeNull()
+    expect(screen.getByText('1017456789')).toBeDefined()
+    expect(screen.queryByText('1017xxxxxx')).toBeNull()
   })
 
   it('muestra PENDIENTE DE PAGO con los datos de pago cuando no está pagado', () => {

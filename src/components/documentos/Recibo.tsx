@@ -4,15 +4,6 @@ import { formatearPesos } from '@/lib/dinero'
 import { valorEnLetras } from '@/lib/numero-a-letras'
 import { formatearFechaCo } from '@/lib/fecha'
 
-/** La cédula se muestra parcial: es el recibo del propio cliente,
- *  pero el papel puede quedar a la vista de terceros. */
-function enmascararCedula(cedula: string | null): string {
-  if (!cedula) return '—'
-  const limpia = cedula.replace(/\D/g, '')
-  if (limpia.length <= 4) return limpia
-  return `${limpia.slice(0, 4)}${'x'.repeat(limpia.length - 4)}`
-}
-
 export function Recibo({ pedido, ajustes }: { pedido: PedidoCompleto; ajustes: Ajustes }) {
   const pagado = pedido.estadoPago === 'pagado'
 
@@ -36,7 +27,7 @@ export function Recibo({ pedido, ajustes }: { pedido: PedidoCompleto; ajustes: A
       <div className="grid grid-cols-[74px_1fr] gap-y-0.5 text-[13.5px] leading-tight">
         <div className="font-extrabold">Cliente:</div><div>{pedido.clienteNombre}</div>
         <div className="font-extrabold">Fecha:</div><div>{formatearFechaCo(pedido.fecha)}</div>
-        <div className="font-extrabold">Cédula:</div><div>{enmascararCedula(pedido.clienteCedula)}</div>
+        <div className="font-extrabold">Cédula:</div><div>{pedido.clienteCedula ?? '—'}</div>
         <div className="font-extrabold">Teléfono:</div><div>{pedido.clienteTelefono ?? '—'}</div>
         <div className="font-extrabold">Asesor:</div><div>{pedido.asesorCodigo ?? '—'}</div>
         <div className="font-extrabold">Envío:</div>
