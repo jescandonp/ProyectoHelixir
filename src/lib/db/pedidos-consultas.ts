@@ -3,6 +3,7 @@
 import { crearClienteServidor } from './cliente-supabase'
 import { filtrarPedidosReales } from './filtros-pedidos'
 import { POR_PAGINA } from './paginacion'
+import { traerTodoPaginado } from './paginado'
 import { rangoDelDia, type Rango } from '@/lib/periodo'
 import type { EstadoPedido, EstadoPago } from '@/lib/tipos'
 
@@ -89,24 +90,32 @@ export async function listarPedidos(filtros: FiltrosPedidos): Promise<PaginaPedi
   return { filas: (data ?? []).map(mapearFila), total: count ?? 0 }
 }
 
-/** Igual que `listarPedidos`, pero sin `.range()`: trae todas las filas que
- *  cumplen el filtro. La usa la exportación a Excel/PDF, donde "el resultado
- *  filtrado" tiene que ser todo, no la página de 50 que se ve en pantalla. */
+/** Igual que `listarPedidos`, pero sin `.range()` fijo: trae todas las filas
+ *  que cumplen el filtro. La usa la exportación a Excel/PDF, donde "el
+ *  resultado filtrado" tiene que ser todo, no la página de 50 que se ve en
+ *  pantalla. PostgREST igual aplica su propio techo (`max_rows` en
+ *  supabase/config.toml) a cada consulta individual, así que se trae en
+ *  bloques con `traerTodoPaginado` — quitar solo el `.range()` de arriba,
+ *  sin paginar por debajo, trunca en silencio cualquier filtro con más de
+ *  `max_rows` pedidos. */
 export async function listarPedidosParaExportar(
   filtros: Omit<FiltrosPedidos, 'pagina'>,
 ): Promise<FilaPedido[]> {
   const supabase = await crearClienteServidor()
 
-  const consulta = aplicarFiltros(
-    filtrarPedidosReales(supabase.from('pedidos').select(COLUMNAS)),
-    filtros,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const datos = await traerTodoPaginado<any>((desde, hasta) =>
+    aplicarFiltros(
+      filtrarPedidosReales(supabase.from('pedidos').select(COLUMNAS)),
+      filtros,
+    )
+      .order('fecha', { ascending: false })
+      .order('id', { ascending: false })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .range(desde, hasta) as any,
   )
-    .order('fecha', { ascending: false })
-    .order('id', { ascending: false })
 
-  const { data, error } = await consulta
-  if (error) throw new Error(`No se pudo leer los pedidos para exportar: ${error.message}`)
-  return (data ?? []).map(mapearFila)
+  return datos.map(mapearFila)
 }
 
 /** PostgREST no suma sin una función SQL, y meter la lógica del negocio en
