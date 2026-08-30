@@ -373,11 +373,10 @@ describe('generarExcelPedidos', () => {
   it('arma una hoja "Pedidos" con encabezado y una fila por pedido', async () => {
     const buffer = await generarExcelPedidos([FILA])
     const libro = new ExcelJS.Workbook()
-    // exceljs declara `Buffer` global a su manera (extends ArrayBuffer) en
-    // index.d.ts, lo que rompe la compatibilidad estructural con el `Buffer`
-    // real de @types/node en TypeScript 5.9 — un bug conocido de sus tipos,
-    // no del código. `Buffer.from()` de @types/node ya garantiza en runtime
-    // que esto es un Buffer válido.
+    // exceljs/index.d.ts sombrea `Buffer` localmente (extends ArrayBuffer),
+    // así que la firma de `.load()` exige un `Buffer` distinto al real de
+    // @types/node — un bug conocido de sus tipos, no del código. `Buffer.from()`
+    // de @types/node ya garantiza en runtime que esto es un Buffer válido.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await libro.xlsx.load(buffer as any)
     const hoja = libro.getWorksheet('Pedidos')!
@@ -392,11 +391,10 @@ describe('generarExcelPedidos', () => {
   it('con ciudad nula, deja la celda vacía en vez de lanzar', async () => {
     const buffer = await generarExcelPedidos([{ ...FILA, dirCiudad: null }])
     const libro = new ExcelJS.Workbook()
-    // exceljs declara `Buffer` global a su manera (extends ArrayBuffer) en
-    // index.d.ts, lo que rompe la compatibilidad estructural con el `Buffer`
-    // real de @types/node en TypeScript 5.9 — un bug conocido de sus tipos,
-    // no del código. `Buffer.from()` de @types/node ya garantiza en runtime
-    // que esto es un Buffer válido.
+    // exceljs/index.d.ts sombrea `Buffer` localmente (extends ArrayBuffer),
+    // así que la firma de `.load()` exige un `Buffer` distinto al real de
+    // @types/node — un bug conocido de sus tipos, no del código. `Buffer.from()`
+    // de @types/node ya garantiza en runtime que esto es un Buffer válido.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await libro.xlsx.load(buffer as any)
     const hoja = libro.getWorksheet('Pedidos')!
@@ -406,11 +404,10 @@ describe('generarExcelPedidos', () => {
   it('con una lista vacía, arma solo el encabezado', async () => {
     const buffer = await generarExcelPedidos([])
     const libro = new ExcelJS.Workbook()
-    // exceljs declara `Buffer` global a su manera (extends ArrayBuffer) en
-    // index.d.ts, lo que rompe la compatibilidad estructural con el `Buffer`
-    // real de @types/node en TypeScript 5.9 — un bug conocido de sus tipos,
-    // no del código. `Buffer.from()` de @types/node ya garantiza en runtime
-    // que esto es un Buffer válido.
+    // exceljs/index.d.ts sombrea `Buffer` localmente (extends ArrayBuffer),
+    // así que la firma de `.load()` exige un `Buffer` distinto al real de
+    // @types/node — un bug conocido de sus tipos, no del código. `Buffer.from()`
+    // de @types/node ya garantiza en runtime que esto es un Buffer válido.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await libro.xlsx.load(buffer as any)
     const hoja = libro.getWorksheet('Pedidos')!
