@@ -43,6 +43,7 @@ export interface Cliente {
   nombre: string
   telefono: string | null
   cedula: string | null
+  correo: string | null
   tipo: TipoCliente
   notas: string | null
   direcciones?: Direccion[]
