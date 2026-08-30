@@ -6,7 +6,7 @@ import { FiltrosPedidos } from '@/components/pedidos/FiltrosPedidos'
 import { FilaPedido } from '@/components/pedidos/FilaPedido'
 import { TarjetaPedido } from '@/components/pedidos/TarjetaPedido'
 import { Paginacion } from '@/components/Paginacion'
-import { TARJETA } from '@/components/estilos'
+import { TARJETA, BOTON_SECUNDARIO } from '@/components/estilos'
 import type { EstadoPedido } from '@/lib/tipos'
 import { fechaValida, estadoPagoValido } from '@/lib/pedidos/filtros-url'
 
@@ -58,6 +58,13 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pa
     return `/pedidos?${nuevos.toString()}`
   }
 
+  function enlaceExportar(formato: 'excel' | 'pdf'): string {
+    const nuevos = conservar(sp)
+    nuevos.delete('pagina')
+    nuevos.set('formato', formato)
+    return `/api/pedidos/exportar?${nuevos.toString()}`
+  }
+
   const vacio = filas.length === 0
 
   return (
@@ -81,6 +88,11 @@ export default async function PaginaPedidos({ searchParams }: { searchParams: Pa
           <span className="mt-0.5 block text-etiqueta-md text-tinta-suave">
             Total pendiente de siempre, no solo de lo filtrado
           </span>
+        </div>
+
+        <div className="flex gap-2">
+          <a href={enlaceExportar('excel')} className={BOTON_SECUNDARIO}>⬇ Excel</a>
+          <a href={enlaceExportar('pdf')} className={BOTON_SECUNDARIO}>⬇ PDF</a>
         </div>
       </div>
 
