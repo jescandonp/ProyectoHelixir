@@ -27,7 +27,7 @@ export async function traerTodoPaginado<F>(
   let desde = 0
   for (;;) {
     const { data, error } = await construirConsulta(desde, desde + TAMANO_BLOQUE_POSTGREST - 1)
-    if (error) throw new Error(error.message)
+    if (error) throw new Error(`No se pudo traer un bloque de pedidos: ${error.message}`)
     const bloque = data ?? []
     filas.push(...bloque)
     if (bloque.length < TAMANO_BLOQUE_POSTGREST) break
