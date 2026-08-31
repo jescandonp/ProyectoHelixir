@@ -16,7 +16,7 @@ const pedido: PedidoCompleto = {
   estado: 'confirmado', estadoPago: 'pendiente', tipoEntrega: 'local',
   transportadora: null, fechaPago: null,
   clienteCodigo: 'CL-0042', clienteNombre: 'Juanito González',
-  clienteTelefono: '312 456 7890', clienteCedula: '1017456789',
+  clienteTelefono: '312 456 7890', clienteCedula: '1017456789', clienteCorreo: null,
   dirLinea: 'Cra 45 # 23-18', dirBarrio: 'La Floresta', dirCiudad: 'Medellín',
   dirDepartamento: 'Antioquia', dirIndicaciones: 'Portería, timbre 302',
   asesorCodigo: '002', valorDomicilio: 8000, descuento: 0,

@@ -34,6 +34,7 @@ export interface PedidoCompleto {
   clienteNombre: string
   clienteTelefono: string | null
   clienteCedula: string | null
+  clienteCorreo: string | null
 
   dirLinea: string | null
   dirBarrio: string | null
@@ -109,7 +110,7 @@ export async function confirmarPedido(id: string): Promise<{ consecutivo: string
 
   const { data: pedido, error } = await supabase
     .from('pedidos')
-    .select('*, pedido_items(*), clientes(codigo, nombre, telefono, cedula), direcciones(*)')
+    .select('*, pedido_items(*), clientes(codigo, nombre, telefono, cedula, correo), direcciones(*)')
     .eq('id', id)
     .single()
 
@@ -151,6 +152,7 @@ export async function confirmarPedido(id: string): Promise<{ consecutivo: string
       cliente_nombre: pedido.clientes.nombre,
       cliente_telefono: pedido.clientes.telefono,
       cliente_cedula: pedido.clientes.cedula,
+      cliente_correo: pedido.clientes.correo,
       dir_linea: pedido.direcciones?.linea ?? null,
       dir_barrio: pedido.direcciones?.barrio ?? null,
       dir_ciudad: pedido.direcciones?.ciudad ?? null,
@@ -198,6 +200,7 @@ export async function obtenerPedido(id: string): Promise<PedidoCompleto | null> 
     clienteNombre: data.cliente_nombre ?? '',
     clienteTelefono: data.cliente_telefono,
     clienteCedula: data.cliente_cedula,
+    clienteCorreo: data.cliente_correo,
     dirLinea: data.dir_linea,
     dirBarrio: data.dir_barrio,
     dirCiudad: data.dir_ciudad,
