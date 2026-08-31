@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { buscarClientes, crearCliente } from '@/lib/db/clientes'
+import { correoValido } from '@/lib/clientes/validacion'
 import {
   CAMPO, BOTON_PRIMARIO, BOTON_SECUNDARIO, CHIP_CODIGO, ETIQUETA_SECCION, AVISO_ERROR,
 } from '@/components/estilos'
@@ -9,7 +10,7 @@ import { IconoLupa } from '@/components/iconos'
 import type { Cliente } from '@/lib/tipos'
 
 const FORM_VACIO = {
-  nombre: '', telefono: '', cedula: '',
+  nombre: '', telefono: '', cedula: '', correo: '',
   linea: '', barrio: '', ciudad: '', departamento: '', indicaciones: '',
 }
 
@@ -36,11 +37,15 @@ export function BuscadorCliente({ onSeleccionar }: { onSeleccionar: (c: Cliente)
 
   async function guardar(e: React.FormEvent) {
     e.preventDefault()
-    setGuardando(true)
     setError(null)
+    if (form.correo.trim() && !correoValido(form.correo.trim())) {
+      setError('El correo no tiene un formato válido')
+      return
+    }
+    setGuardando(true)
     try {
       const cliente = await crearCliente(
-        { nombre: form.nombre, telefono: form.telefono, cedula: form.cedula, tipo: 'detal' },
+        { nombre: form.nombre, telefono: form.telefono, cedula: form.cedula, correo: form.correo, tipo: 'detal' },
         {
           linea: form.linea, barrio: form.barrio, ciudad: form.ciudad,
           departamento: form.departamento, indicaciones: form.indicaciones,
@@ -74,6 +79,9 @@ export function BuscadorCliente({ onSeleccionar }: { onSeleccionar: (c: Cliente)
             onChange={(e) => setForm({ ...form, cedula: e.target.value })}
             className={`${CAMPO} bg-tarjeta`} />
         </div>
+        <input type="email" placeholder="Correo (opcional)" value={form.correo}
+          onChange={(e) => setForm({ ...form, correo: e.target.value })}
+          className={`${CAMPO} bg-tarjeta`} />
         <input required placeholder="Dirección" value={form.linea}
           onChange={(e) => setForm({ ...form, linea: e.target.value })}
           className={`${CAMPO} bg-tarjeta`} />
