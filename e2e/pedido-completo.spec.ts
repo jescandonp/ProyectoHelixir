@@ -112,3 +112,29 @@ test('pedido nacional con transportadora "Otra"', async ({ page }) => {
   // nunca en el rótulo nacional (§7.3 del diseño original).
   await expect(page.getByText('Envíos del Valle')).toBeVisible()
 })
+
+test('sin correo registrado, "Enviar por correo" queda deshabilitado', async ({ page }) => {
+  const nombreCliente = `Cliente Prueba Sin Correo ${Date.now().toString().slice(-6)}`
+
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill(process.env.E2E_CORREO!)
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE!)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+  await expect(page).toHaveURL(/\/pedidos\/nuevo/)
+
+  await page.getByPlaceholder(/Buscar cliente/).fill(nombreCliente)
+  await page.getByText(/Crear cliente nuevo/).click()
+  await page.getByPlaceholder('Teléfono').fill('3124567890')
+  await page.getByPlaceholder('Dirección').fill('Cra 45 # 23-18')
+  await page.getByPlaceholder('Barrio').fill('La Floresta')
+  await page.getByPlaceholder('Ciudad').fill('Medellín')
+  await page.getByRole('button', { name: 'Guardar y usar' }).click()
+  await expect(page.getByText(nombreCliente)).toBeVisible()
+
+  await page.getByRole('button', { name: /^Vainilla/ }).click()
+  await page.getByRole('button', { name: /Generar recibo/ }).click()
+  await expect(page).toHaveURL(/\/pedidos\/.+\/documentos/)
+
+  await expect(page.getByRole('button', { name: /Enviar por correo/ })).toBeDisabled()
+  await expect(page.getByRole('link', { name: /Descargar PDF/ })).toBeVisible()
+})
