@@ -4,6 +4,10 @@ import { crearClienteServidor, obtenerUsuarioActual } from './cliente-supabase'
 import { calcularTotales, calcularSubtotalItem } from '@/lib/pedidos/calculos'
 import { validarParaConfirmar } from '@/lib/pedidos/validacion'
 import { puedeTransicionar } from '@/lib/pedidos/estados'
+import { obtenerAjustes } from './ajustes'
+import { renderReciboPdf } from '@/lib/documentos/pdf/ReciboPdf'
+import { construirCorreoRecibo } from '@/lib/correo/recibo'
+import { enviarCorreoConAdjunto } from '@/lib/correo/resend'
 import type {
   ItemPedido, EstadoPedido, EstadoPago, TipoEntrega,
 } from '@/lib/tipos'
@@ -336,4 +340,14 @@ export async function marcarEnviado(id: string): Promise<void> {
 
 export async function marcarEntregado(id: string): Promise<void> {
   return cambiarEstado(id, 'entregado')
+}
+
+export async function enviarReciboPorCorreo(id: string): Promise<void> {
+  const pedido = await obtenerPedido(id)
+  if (!pedido) throw new Error('No se encontró el pedido')
+
+  const ajustes = await obtenerAjustes()
+  const pdf = await renderReciboPdf(pedido, ajustes)
+  const correo = construirCorreoRecibo(pedido, ajustes, pdf)
+  await enviarCorreoConAdjunto(correo)
 }
