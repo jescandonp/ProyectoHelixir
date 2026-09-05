@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calcularSubtotalItem, calcularTotales } from './calculos'
+import { calcularSubtotalItem, calcularTotales, validarDescuento } from './calculos'
 import type { ItemPedido } from '@/lib/tipos'
 
 function item(cantidad: number, precioUnitario: number): ItemPedido {
@@ -29,6 +29,10 @@ describe('calcularTotales', () => {
     expect(calcularTotales([item(1, 22000)], 5000, 2000).total).toBe(25000)
   })
 
+  it('conserva el domicilio aunque una entrada inválida exceda el subtotal', () => {
+    expect(calcularTotales([item(1, 22000)], 5000, 25000).total).toBe(5000)
+  })
+
   it('devuelve ceros con el pedido vacío', () => {
     expect(calcularTotales([], 0, 0)).toEqual({ subtotal: 0, totalKg: 0, total: 0 })
   })
@@ -44,5 +48,15 @@ describe('calcularTotales', () => {
     const totales = calcularTotales([item(2, 22000), libre], 0, 0)
     expect(totales.subtotal).toBe(74000)
     expect(totales.totalKg).toBe(3)
+  })
+})
+
+describe('validarDescuento', () => {
+  it('acepta pesos enteros entre cero y el subtotal', () => {
+    expect(validarDescuento(4000, 22000)).toBeNull()
+  })
+
+  it.each([-1, 22000.5, 22001])('rechaza el descuento inválido %s', (descuento) => {
+    expect(validarDescuento(descuento, 22000)).toMatch(/descuento/i)
   })
 })
