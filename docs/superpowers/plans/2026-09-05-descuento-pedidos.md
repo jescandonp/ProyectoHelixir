@@ -43,8 +43,8 @@
     expect(total).toMatchObject({ subtotal: 22000, total: 25000 })
   })
 
-  it('conserva el domicilio cuando el descuento cubre todo el subtotal', () => {
-    expect(calcularTotales([item(1, 22000)], 5000, 22000).total).toBe(5000)
+  it('conserva el domicilio aunque una entrada inválida exceda el subtotal', () => {
+    expect(calcularTotales([item(1, 22000)], 5000, 25000).total).toBe(5000)
   })
 
   it.each([-1, 22000.5, 22001])('rechaza descuento inválido %s', (descuento) => {
@@ -60,7 +60,8 @@
   & 'C:\Program Files\nodejs\node.exe' '.\node_modules\vitest\vitest.mjs' run src/lib/pedidos/calculos.test.ts --maxWorkers=1
   ```
 
-  Expected: el caso con domicilio falla porque la fórmula actual descuenta al final, y `validarDescuento` aún no existe.
+  Expected: el caso con descuento excesivo falla porque la fórmula actual también
+  descuenta el domicilio, y `validarDescuento` aún no existe.
 
 - [ ] **Step 3: Implementar la mínima regla reutilizable**
 
