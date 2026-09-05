@@ -59,4 +59,9 @@ describe('validarDescuento', () => {
   it.each([-1, 22000.5, 22001])('rechaza el descuento inválido %s', (descuento) => {
     expect(validarDescuento(descuento, 22000)).toMatch(/descuento/i)
   })
+
+  it('explica exactamente cuándo supera el subtotal', () => {
+    expect(validarDescuento(22001, 22000))
+      .toBe('El descuento no puede superar el subtotal de productos')
+  })
 })
