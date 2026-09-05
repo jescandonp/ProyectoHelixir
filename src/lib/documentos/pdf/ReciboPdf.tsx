@@ -94,6 +94,11 @@ function ReciboPdf({ pedido, ajustes }: { pedido: PedidoCompleto; ajustes: Ajust
         <View style={estilos.filaTotalParcial}>
           <Text>Subtotal: {formatearPesos(pedido.subtotal)}</Text>
         </View>
+        {pedido.descuento > 0 && (
+          <View style={estilos.filaTotalParcial}>
+            <Text>Descuento: -{formatearPesos(pedido.descuento)}</Text>
+          </View>
+        )}
         <View style={estilos.filaTotalParcial}>
           <Text>Valor Domicilio: {formatearPesos(pedido.valorDomicilio)}</Text>
         </View>

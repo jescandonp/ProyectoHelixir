@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { afterEach, describe, it, expect } from 'vitest'
+import { cleanup, render, screen } from '@testing-library/react'
 import { Recibo } from './Recibo'
 import type { PedidoCompleto } from '@/lib/db/pedidos'
 import type { Ajustes } from '@/lib/db/ajustes'
+
+afterEach(cleanup)
 
 const ajustes: Ajustes = {
   nombreNegocio: 'MI NEGOCIO', eslogan: 'Helado Artesanal', logoUrl: null,
@@ -83,5 +85,18 @@ describe('Recibo', () => {
     )
     expect(screen.getByText('4 kg × $ 22.000')).toBeDefined()
     expect(screen.queryByText('1 kg × $ 22.000')).toBeNull()
+  })
+
+  it('muestra el descuento antes del domicilio cuando es positivo', () => {
+    render(<Recibo pedido={{ ...pedido, descuento: 4000, total: 236000 }} ajustes={ajustes} />)
+
+    expect(screen.getByText('Descuento:')).toBeDefined()
+    expect(screen.getByText('-$ 4.000')).toBeDefined()
+  })
+
+  it('oculta la línea de descuento cuando su valor es cero', () => {
+    render(<Recibo pedido={pedido} ajustes={ajustes} />)
+
+    expect(screen.queryByText('Descuento:')).toBeNull()
   })
 })

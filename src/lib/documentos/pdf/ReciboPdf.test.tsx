@@ -45,4 +45,11 @@ describe('renderReciboPdf', () => {
     )
     expect(buffer.byteLength).toBeGreaterThan(0)
   })
+
+  it('renderiza un PDF no vacío con descuento', async () => {
+    const buffer = await renderReciboPdf(
+      { ...pedido, descuento: 4000, total: 236000 }, ajustes,
+    )
+    expect(buffer.byteLength).toBeGreaterThan(0)
+  })
 })
