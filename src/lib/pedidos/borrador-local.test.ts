@@ -68,7 +68,8 @@ describe('borrador local', () => {
   })
 
   it('normaliza a cero un borrador creado antes del descuento', () => {
-    const { descuento: _descuento, ...sinDescuento } = ejemplo()
+    const sinDescuento: Partial<BorradorGuardado> = { ...ejemplo() }
+    delete sinDescuento.descuento
     almacen.setItem('pedido-borrador', JSON.stringify(sinDescuento))
 
     expect(leerBorradorLocal(almacen)?.descuento).toBe(0)
