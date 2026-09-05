@@ -15,7 +15,7 @@ export async function crearClienteServidor() {
         try {
           nuevas.forEach(({ name, value, options }) => almacen.set(name, value, options))
         } catch {
-          // Llamado desde un Server Component: el middleware refresca la sesión.
+          // Llamado desde un Server Component: el proxy refresca la sesión.
         }
       },
     },

@@ -47,9 +47,6 @@ export function RotuloLocal({ pedido, ajustes }: { pedido: PedidoCompleto; ajust
 
       <div className="mt-2 flex items-center justify-between border-t border-black pt-1.5">
         <span className="font-mono text-[11px] font-bold">{pedido.clienteCodigo}</span>
-        <span className="border-[1.5px] border-black px-1.5 py-0.5 text-[10px] font-extrabold">
-          ❄ CONGELADO
-        </span>
       </div>
     </div>
   )

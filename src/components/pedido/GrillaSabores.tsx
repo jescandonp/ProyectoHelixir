@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Producto } from '@/lib/tipos'
 import { formatearPesos } from '@/lib/dinero'
+import { CAMPO, CAMPO_CHICO, BOTON_PRIMARIO } from '@/components/estilos'
 
 interface Props {
   productos: Producto[]
@@ -35,21 +36,22 @@ export function GrillaSabores({ productos, cantidades, onSumar, onRestar, onItem
   }
 
   return (
-    <div className="rounded-lg border bg-white p-3">
+    <div>
       <input
         value={filtro} onChange={(e) => setFiltro(e.target.value)}
         placeholder="Escribe para filtrar sabores…"
-        className="mb-3 w-full rounded border px-2 py-1.5 text-sm"
+        aria-label="Filtrar sabores"
+        className={`${CAMPO} mb-4`}
       />
 
       {Object.entries(porPrecio)
         .sort(([a], [b]) => Number(a) - Number(b))
         .map(([precioGrupo, delGrupo]) => (
-          <div key={precioGrupo} className="mb-3">
-            <p className="mb-1.5 text-[11px] font-bold text-slate-400">
+          <div key={precioGrupo} className="mb-4">
+            <p className="mb-2 text-etiqueta-lg text-primario">
               {formatearPesos(Number(precioGrupo))}
             </p>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
               {delGrupo.map((producto) => {
                 const cantidad = cantidades[producto.id] ?? 0
                 return (
@@ -57,15 +59,18 @@ export function GrillaSabores({ productos, cantidades, onSumar, onRestar, onItem
                     key={producto.id} type="button"
                     onClick={() => onSumar(producto)}
                     onContextMenu={(e) => { e.preventDefault(); onRestar(producto) }}
-                    className={`relative rounded-md border px-1.5 py-2 text-xs ${
+                    // El borde de 2px existe siempre, seleccionado o no: si
+                    // apareciera solo al escoger, la pastilla daría un salto
+                    // de un píxel y la grilla entera bailaría al hacer clic.
+                    className={`relative rounded-md border-2 px-2 py-3 text-etiqueta-lg tracking-normal transition-all ${
                       cantidad > 0
-                        ? 'border-blue-600 bg-blue-600 font-semibold text-white'
-                        : 'border-slate-200 text-slate-700 hover:border-blue-400'
+                        ? 'border-primario bg-primario-fijo text-sobre-primario-fijo shadow-nivel2'
+                        : 'border-transparent bg-tarjeta-baja text-tinta hover:border-primario-fijo-tenue'
                     }`}
                   >
                     {producto.nombre} {producto.emoji}
                     {cantidad > 0 && (
-                      <span className="absolute -right-1.5 -top-1.5 min-w-[19px] rounded-full bg-red-600 text-[11px] leading-[19px] text-white">
+                      <span className="absolute -right-2 -top-2 min-w-[22px] rounded-full bg-primario px-1 text-etiqueta-md leading-[22px] text-sobre-primario">
                         {cantidad}
                       </span>
                     )}
@@ -77,22 +82,24 @@ export function GrillaSabores({ productos, cantidades, onSumar, onRestar, onItem
         ))}
 
       {abriendoLibre ? (
-        <div className="flex gap-2 rounded-md border border-dashed border-amber-500 bg-amber-50 p-2">
+        <div className="flex flex-wrap gap-2 rounded-lg border border-dashed border-primario bg-primario-fijo/40 p-3">
           <input autoFocus value={descripcion} onChange={(e) => setDescripcion(e.target.value)}
-            placeholder="Qué es" className="flex-1 rounded border px-2 py-1 text-sm" />
+            placeholder="Qué es" className={`${CAMPO_CHICO} min-w-40 flex-1 bg-tarjeta`} />
           <input value={precio} onChange={(e) => setPrecio(e.target.value)}
-            placeholder="Precio" inputMode="numeric" className="w-24 rounded border px-2 py-1 text-sm" />
-          <button type="button" onClick={agregarLibre}
-            className="rounded bg-amber-600 px-3 text-sm font-semibold text-white">Agregar</button>
+            placeholder="Precio" inputMode="numeric"
+            className={`${CAMPO_CHICO} w-28 bg-tarjeta`} />
+          <button type="button" onClick={agregarLibre} className={`${BOTON_PRIMARIO} py-1.5`}>
+            Agregar
+          </button>
         </div>
       ) : (
         <button type="button" onClick={() => setAbriendoLibre(true)}
-          className="w-full rounded-md border border-dashed border-amber-500 bg-amber-50 py-2 text-xs font-semibold text-amber-700">
+          className="w-full rounded-lg border border-dashed border-borde-suave py-3 text-etiqueta-lg text-primario transition-colors hover:border-primario hover:bg-primario-fijo/40">
           ＋ Ítem libre
         </button>
       )}
 
-      <p className="mt-2 text-[11px] text-slate-400">
+      <p className="mt-3 text-etiqueta-md text-tinta-suave">
         Clic para sumar · clic derecho para restar
       </p>
     </div>

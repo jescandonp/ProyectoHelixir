@@ -2,6 +2,8 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
+import { CAMPO, BOTON_PRIMARIO } from '@/components/estilos'
+import { IconoLupa } from '@/components/iconos'
 
 export function BuscadorListado() {
   const router = useRouter()
@@ -16,13 +18,17 @@ export function BuscadorListado() {
   }
 
   return (
-    <form onSubmit={buscar} className="mb-3 flex gap-2">
-      <input
-        value={texto} onChange={(e) => setTexto(e.target.value)}
-        placeholder="Buscar por nombre, teléfono o código…"
-        className="flex-1 rounded-lg border px-3 py-2 text-sm"
-      />
-      <button type="submit" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+    <form onSubmit={buscar} className="mb-6 flex gap-3">
+      <div className="relative flex-1">
+        <IconoLupa className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-borde" />
+        <input
+          value={texto} onChange={(e) => setTexto(e.target.value)}
+          placeholder="Buscar por nombre, teléfono o código…"
+          aria-label="Buscar clientes"
+          className={`${CAMPO} pl-11`}
+        />
+      </div>
+      <button type="submit" className={BOTON_PRIMARIO}>
         Buscar
       </button>
     </form>

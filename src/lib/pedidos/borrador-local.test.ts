@@ -19,7 +19,7 @@ function almacenFalso(): Storage {
 function ejemplo(): BorradorGuardado {
   return {
     cliente: { id: 'c1', codigo: 'CL-0042', nombre: 'Juanito', telefono: null,
-               cedula: null, tipo: 'detal', notas: null, direcciones: [] },
+               cedula: null, correo: null, tipo: 'detal', notas: null, direcciones: [] },
     direccion: null,
     items: [{ productoId: 'p1', descripcion: 'Vainilla', cantidad: 4, precioUnitario: 22000 }],
     tipoEntrega: 'local',

@@ -3,6 +3,8 @@ import { listarClientes } from '@/lib/db/clientes'
 import { CLIENTES_POR_PAGINA, sanearPagina } from '@/lib/db/paginacion'
 import { BuscadorListado } from '@/components/clientes/BuscadorListado'
 import { Paginacion } from '@/components/Paginacion'
+import { TARJETA, CHIP_CODIGO } from '@/components/estilos'
+import { IconoTelefono, IconoPin } from '@/components/iconos'
 
 type Params = Promise<Record<string, string | undefined>>
 
@@ -20,27 +22,39 @@ export default async function PaginaClientes({ searchParams }: { searchParams: P
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-4">
-      <h1 className="mb-3 text-lg font-bold">Clientes</h1>
+    <div className="mx-auto max-w-4xl px-4 py-6 md:px-10">
+      <h1 className="mb-6 font-titulo text-titulo-lg-mobile text-tinta md:text-titulo-lg">
+        Clientes
+      </h1>
 
       <BuscadorListado />
 
-      <div className="overflow-hidden rounded-lg border bg-white">
-        {filas.length === 0 && (
-          <p className="px-3 py-6 text-center text-sm text-slate-400">No hay clientes</p>
-        )}
+      {filas.length === 0 && (
+        <p className={`${TARJETA} px-4 py-10 text-center text-cuerpo-md text-tinta-tenue`}>
+          No hay clientes
+        </p>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2">
         {filas.map((cliente) => (
-          <Link key={cliente.id} href={`/clientes/${cliente.id}`}
-            className="flex items-center justify-between border-b px-3 py-2 text-sm hover:bg-slate-50">
-            <span>
-              <span className="block font-semibold">{cliente.nombre}</span>
-              <span className="block text-xs text-slate-500">
-                {cliente.telefono ?? 'sin teléfono'} · {cliente.direcciones?.[0]?.ciudad ?? 'sin ciudad'}
+          <Link
+            key={cliente.id} href={`/clientes/${cliente.id}`}
+            className={`${TARJETA} block p-5 transition-shadow hover:shadow-nivel2`}
+          >
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <span className="font-titulo text-cuerpo-lg text-tinta">{cliente.nombre}</span>
+              <span className={CHIP_CODIGO}>{cliente.codigo}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-etiqueta-lg font-medium tracking-normal text-tinta-suave">
+              <span className="flex items-center gap-1.5">
+                <IconoTelefono className="h-4 w-4 shrink-0" />
+                {cliente.telefono ?? 'sin teléfono'}
               </span>
-            </span>
-            <span className="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-[10px] text-blue-700">
-              {cliente.codigo}
-            </span>
+              <span className="flex items-center gap-1.5">
+                <IconoPin className="h-4 w-4 shrink-0" />
+                {cliente.direcciones?.[0]?.ciudad ?? 'sin ciudad'}
+              </span>
+            </div>
           </Link>
         ))}
       </div>

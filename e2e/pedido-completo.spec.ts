@@ -5,9 +5,9 @@ const NOMBRE_CLIENTE = `Cliente Prueba ${SUFIJO}`
 
 test('toma un pedido de punta a punta y genera recibo y rótulo', async ({ page }) => {
   await page.goto('/ingresar')
-  await page.getByPlaceholder('Correo').fill(process.env.E2E_CORREO!)
-  await page.getByPlaceholder('Contraseña').fill(process.env.E2E_CLAVE!)
-  await page.getByRole('button', { name: 'Entrar' }).click()
+  await page.getByLabel('Correo electrónico').fill(process.env.E2E_CORREO!)
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE!)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
 
   await expect(page).toHaveURL(/\/pedidos\/nuevo/)
 
@@ -33,13 +33,108 @@ test('toma un pedido de punta a punta y genera recibo y rótulo', async ({ page 
 
   await expect(page).toHaveURL(/\/pedidos\/.+\/documentos/)
 
-  // El recibo salió con consecutivo, total en letras y aviso de frío
+  // El recibo salió con consecutivo y total en letras
   await expect(page.getByText(/ORDEN No\./)).toBeVisible()
   await expect(page.getByText(/M\/cte/)).toBeVisible()
-  await expect(page.getByText(/CONSERVAR EN FRÍO/)).toBeVisible()
 
   // El rótulo lleva el código de cliente, no la cédula
   await page.getByRole('button', { name: /Rótulo/ }).click()
   await expect(page.getByText(/^CL-\d{4}$/)).toBeVisible()
-  await expect(page.getByText(/CONGELADO/)).toBeVisible()
+})
+
+test('pedido nacional con transportadora de la lista', async ({ page }) => {
+  const nombreCliente = `Cliente Prueba Transportadora ${Date.now().toString().slice(-6)}`
+
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill(process.env.E2E_CORREO!)
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE!)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+  await expect(page).toHaveURL(/\/pedidos\/nuevo/)
+
+  await page.getByPlaceholder(/Buscar cliente/).fill(nombreCliente)
+  await page.getByText(/Crear cliente nuevo/).click()
+  await page.getByPlaceholder('Teléfono').fill('3124567890')
+  await page.getByPlaceholder('Dirección').fill('Cra 45 # 23-18')
+  await page.getByPlaceholder('Barrio').fill('La Floresta')
+  await page.getByPlaceholder('Ciudad').fill('Medellín')
+  await page.getByRole('button', { name: 'Guardar y usar' }).click()
+  await expect(page.getByText(nombreCliente)).toBeVisible()
+
+  await page.getByRole('button', { name: /^Vainilla/ }).click()
+
+  await page.getByRole('button', { name: 'Nacional' }).click()
+
+  // Cubre lo que la prueba de integración de la Task 2 no puede probar en
+  // Node: que `listarTransportadorasActivas()` de verdad llega al
+  // desplegable, con la semilla completa y en el orden sembrado.
+  const opciones = await page.getByLabel('Transportadora').locator('option').allTextContents()
+  expect(opciones).toEqual([
+    'Selecciona transportadora…', 'Interrapidísimo', 'Servientrega', 'TCC', 'Coordinadora', 'Otra…',
+  ])
+
+  await page.getByLabel('Transportadora').selectOption({ label: 'Servientrega' })
+  await page.getByRole('button', { name: /Generar recibo/ }).click()
+
+  await expect(page).toHaveURL(/\/pedidos\/.+\/documentos/)
+  // El recibo (pestaña por defecto) muestra la transportadora; el rótulo
+  // nacional, a propósito, no — lo lee la propia transportadora (§7.3 del
+  // diseño original), así que no repite ahí su propio nombre.
+  await expect(page.getByText('Servientrega')).toBeVisible()
+})
+
+test('pedido nacional con transportadora "Otra"', async ({ page }) => {
+  const nombreCliente = `Cliente Prueba Transportadora Otra ${Date.now().toString().slice(-6)}`
+
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill(process.env.E2E_CORREO!)
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE!)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+  await expect(page).toHaveURL(/\/pedidos\/nuevo/)
+
+  await page.getByPlaceholder(/Buscar cliente/).fill(nombreCliente)
+  await page.getByText(/Crear cliente nuevo/).click()
+  await page.getByPlaceholder('Teléfono').fill('3124567890')
+  await page.getByPlaceholder('Dirección').fill('Cra 45 # 23-18')
+  await page.getByPlaceholder('Barrio').fill('La Floresta')
+  await page.getByPlaceholder('Ciudad').fill('Medellín')
+  await page.getByRole('button', { name: 'Guardar y usar' }).click()
+  await expect(page.getByText(nombreCliente)).toBeVisible()
+
+  await page.getByRole('button', { name: /^Vainilla/ }).click()
+
+  await page.getByRole('button', { name: 'Nacional' }).click()
+  await page.getByLabel('Transportadora').selectOption({ label: 'Otra…' })
+  await page.getByPlaceholder('Nombre de la transportadora').fill('Envíos del Valle')
+  await page.getByRole('button', { name: /Generar recibo/ }).click()
+
+  await expect(page).toHaveURL(/\/pedidos\/.+\/documentos/)
+  // Igual que en el caso anterior: la transportadora sale en el recibo,
+  // nunca en el rótulo nacional (§7.3 del diseño original).
+  await expect(page.getByText('Envíos del Valle')).toBeVisible()
+})
+
+test('sin correo registrado, "Enviar por correo" queda deshabilitado', async ({ page }) => {
+  const nombreCliente = `Cliente Prueba Sin Correo ${Date.now().toString().slice(-6)}`
+
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill(process.env.E2E_CORREO!)
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE!)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+  await expect(page).toHaveURL(/\/pedidos\/nuevo/)
+
+  await page.getByPlaceholder(/Buscar cliente/).fill(nombreCliente)
+  await page.getByText(/Crear cliente nuevo/).click()
+  await page.getByPlaceholder('Teléfono').fill('3124567890')
+  await page.getByPlaceholder('Dirección').fill('Cra 45 # 23-18')
+  await page.getByPlaceholder('Barrio').fill('La Floresta')
+  await page.getByPlaceholder('Ciudad').fill('Medellín')
+  await page.getByRole('button', { name: 'Guardar y usar' }).click()
+  await expect(page.getByText(nombreCliente)).toBeVisible()
+
+  await page.getByRole('button', { name: /^Vainilla/ }).click()
+  await page.getByRole('button', { name: /Generar recibo/ }).click()
+  await expect(page).toHaveURL(/\/pedidos\/.+\/documentos/)
+
+  await expect(page.getByRole('button', { name: /Enviar por correo/ })).toBeDisabled()
+  await expect(page.getByRole('link', { name: /Descargar PDF/ })).toBeVisible()
 })

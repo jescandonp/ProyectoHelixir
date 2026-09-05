@@ -1,11 +1,13 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Recibo } from '@/components/documentos/Recibo'
 import { RotuloLocal } from '@/components/documentos/RotuloLocal'
 import { RotuloNacional } from '@/components/documentos/RotuloNacional'
 import { descargarComoPng } from '@/lib/documentos/a-png'
+import { BOTON_PRIMARIO, BOTON_SECUNDARIO, BOTON_EXITO, AVISO_ERROR, AVISO_EXITO } from '@/components/estilos'
+import { enviarReciboPorCorreo } from '@/lib/db/pedidos'
 import type { PedidoCompleto } from '@/lib/db/pedidos'
 import type { Ajustes } from '@/lib/db/ajustes'
 
@@ -17,6 +19,9 @@ export function VistaDocumentos({
   const [pestana, setPestana] = useState<Pestana>('recibo')
   const referencia = useRef<HTMLDivElement>(null)
   const [generando, setGenerando] = useState(false)
+  const [pendienteCorreo, iniciarCorreo] = useTransition()
+  const [mensajeCorreo, setMensajeCorreo] = useState<string | null>(null)
+  const [errorCorreo, setErrorCorreo] = useState<string | null>(null)
 
   /** `@page` no acepta selectores, así que la regla de tamaño se inyecta
    *  y se reemplaza justo antes de abrir el diálogo de impresión. */
@@ -49,40 +54,76 @@ export function VistaDocumentos({
     }
   }
 
+  function enviarPorCorreo() {
+    setErrorCorreo(null)
+    setMensajeCorreo(null)
+    iniciarCorreo(async () => {
+      try {
+        await enviarReciboPorCorreo(pedido.id)
+        setMensajeCorreo('Recibo enviado por correo')
+      } catch (error) {
+        setErrorCorreo(error instanceof Error ? error.message : 'No se pudo enviar el correo')
+      }
+    })
+  }
+
   return (
-    <div className="mx-auto max-w-3xl p-4">
-      <div className="solo-pantalla mb-4 flex flex-wrap items-center gap-2">
-        <Link href="/pedidos/nuevo" className="rounded-lg border bg-white px-3 py-2 text-sm">
+    <div className="mx-auto max-w-3xl px-4 py-6 md:px-10">
+      <div className="solo-pantalla mb-6 flex flex-wrap items-center gap-3">
+        <Link href="/pedidos/nuevo" className={BOTON_SECUNDARIO}>
           ← Nuevo pedido
         </Link>
 
-        <div className="flex overflow-hidden rounded-lg border bg-white">
-          <button
-            onClick={() => setPestana('recibo')}
-            className={`px-4 py-2 text-sm ${pestana === 'recibo' ? 'bg-slate-900 font-semibold text-white' : ''}`}
-          >
-            Recibo
-          </button>
-          <button
-            onClick={() => setPestana('rotulo')}
-            className={`px-4 py-2 text-sm ${pestana === 'rotulo' ? 'bg-slate-900 font-semibold text-white' : ''}`}
-          >
-            Rótulo {pedido.tipoEntrega === 'local' ? 'local' : 'nacional'}
-          </button>
+        <div className="inline-flex rounded-full bg-tarjeta-media p-1">
+          {(['recibo', 'rotulo'] as Pestana[]).map((clave) => (
+            <button
+              key={clave} type="button" onClick={() => setPestana(clave)}
+              aria-pressed={pestana === clave}
+              className={`rounded-full px-4 py-1.5 text-etiqueta-lg transition-colors ${
+                pestana === clave
+                  ? 'bg-primario text-sobre-primario'
+                  : 'text-tinta-tenue hover:text-primario'
+              }`}
+            >
+              {clave === 'recibo'
+                ? 'Recibo'
+                : `Rótulo ${pedido.tipoEntrega === 'local' ? 'local' : 'nacional'}`}
+            </button>
+          ))}
         </div>
 
-        <button onClick={imprimir}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+        <button type="button" onClick={imprimir} className={BOTON_PRIMARIO}>
           🖨 Imprimir
         </button>
-        <button onClick={descargar} disabled={generando}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+        <button type="button" onClick={descargar} disabled={generando} className={BOTON_EXITO}>
           {generando ? 'Generando…' : '⬇ Imagen para WhatsApp'}
         </button>
+        {pestana === 'recibo' && (
+          <>
+            <a href={`/api/pedidos/${pedido.id}/recibo`} className={BOTON_SECUNDARIO}>
+              ⬇ Descargar PDF
+            </a>
+            <button
+              type="button"
+              onClick={enviarPorCorreo}
+              disabled={pendienteCorreo || !pedido.clienteCorreo}
+              title={!pedido.clienteCorreo ? 'Este cliente no tiene correo registrado' : undefined}
+              className={BOTON_SECUNDARIO}
+            >
+              {pendienteCorreo ? 'Enviando…' : '✉ Enviar por correo'}
+            </button>
+          </>
+        )}
       </div>
 
+      {mensajeCorreo && <p className={`${AVISO_EXITO} solo-pantalla mb-4`}>{mensajeCorreo}</p>}
+      {errorCorreo && <p className={`${AVISO_ERROR} solo-pantalla mb-4`}>{errorCorreo}</p>}
+
       <div className="flex justify-center">
-        <div ref={referencia} className="shadow-lg">
+        {/* La sombra va en este envoltorio y no en la hoja: `html-to-image`
+            captura este nodo para la imagen de WhatsApp, y la hoja tiene que
+            seguir siendo blanco puro para la impresora térmica. */}
+        <div ref={referencia} className="shadow-nivel2">
           {pestana === 'recibo' ? (
             <Recibo pedido={pedido} ajustes={ajustes} />
           ) : pedido.tipoEntrega === 'local' ? (

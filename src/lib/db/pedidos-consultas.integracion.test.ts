@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest'
 import { createClient } from '@supabase/supabase-js'
 import { filtrarPedidosReales } from './filtros-pedidos'
+import { traerTodoPaginado, TAMANO_BLOQUE_POSTGREST } from './paginado'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,4 +88,59 @@ describe('el listado esconde los borradores', () => {
       await limpiarClienteDePrueba(cliente!.id)
     }
   }, 30000)
+})
+
+describe('exportar trae todas las filas del filtro, sin paginar', () => {
+  // PostgREST aplica su propio techo (`max_rows` en supabase/config.toml,
+  // hoy 1000) a CUALQUIER consulta, con o sin `.range()` — con menos filas
+  // que ese techo, una consulta sin paginar y una mal truncada a una sola
+  // página se ven exactamente iguales. La única forma honesta de probar que
+  // `listarPedidosParaExportar` no se trunca en silencio es sembrar más
+  // filas que el techo real y comprobar contra el comportamiento real de
+  // PostgreSQL/PostgREST, no un doble simulado.
+  it('con más filas sembradas que el techo de PostgREST, trae todas', async () => {
+    const { data: cliente } = await supabase
+      .from('clientes').insert({ nombre: 'Prueba exportar > max_rows' }).select('id').single()
+
+    const total = TAMANO_BLOQUE_POSTGREST + 1
+
+    try {
+      // Un solo insert masivo, con `consecutivo` puesto a mano en vez de la
+      // RPC `asignar_consecutivo` (que toma un bloqueo de fila sobre
+      // `ajustes` y obligaría a más de mil vueltas de red secuenciales, solo
+      // para sembrar datos de prueba): lo único que le importa a esta
+      // prueba es que cada fila cumpla `filtrarPedidosReales` (consecutivo
+      // no nulo, estado distinto de 'borrador'), no el formato real del
+      // consecutivo de negocio.
+      const filas = Array.from({ length: total }, (_, i) => ({
+        cliente_id: cliente!.id,
+        estado: 'confirmado',
+        consecutivo: `EXPTEST-${String(i).padStart(6, '0')}`,
+        total: 10000 + i,
+      }))
+      const { error: errorSiembra } = await supabase.from('pedidos').insert(filas)
+      if (errorSiembra) throw new Error(`No se pudieron sembrar los pedidos de prueba: ${errorSiembra.message}`)
+
+      // `traerTodoPaginado` es la misma función de paginación que usa
+      // `listarPedidosParaExportar` (`pedidos-consultas.ts`), no una copia:
+      // aquí solo se sustituye el cliente con sesión (que no existe en
+      // Vitest, ver Global Constraints del plan) por el de service role,
+      // igual que el resto de este archivo.
+      const datos = await traerTodoPaginado<{ id: string }>((desde, hasta) =>
+        filtrarPedidosReales(
+          supabase.from('pedidos').select('id').eq('cliente_id', cliente!.id),
+        )
+          .order('id', { ascending: true })
+          .range(desde, hasta),
+      )
+
+      expect(datos).toHaveLength(total)
+      expect(new Set(datos.map((f) => f.id)).size).toBe(total)
+    } finally {
+      const { error: errorPedidos } = await supabase.from('pedidos').delete().eq('cliente_id', cliente!.id)
+      if (errorPedidos) throw new Error(`No se pudieron limpiar los pedidos de prueba: ${errorPedidos.message}`)
+      const { error: errorCliente } = await supabase.from('clientes').delete().eq('id', cliente!.id)
+      if (errorCliente) throw new Error(`No se pudo limpiar el cliente de prueba: ${errorCliente.message}`)
+    }
+  }, 60000)
 })

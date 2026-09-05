@@ -34,9 +34,9 @@ test.afterEach(async () => {
 
 test('toma un pedido, lo cobra desde la lista y el recibo sale pagado', async ({ page }) => {
   await page.goto('/ingresar')
-  await page.getByPlaceholder('Correo').fill(process.env.E2E_CORREO!)
-  await page.getByPlaceholder('Contraseña').fill(process.env.E2E_CLAVE!)
-  await page.getByRole('button', { name: 'Entrar' }).click()
+  await page.getByLabel('Correo electrónico').fill(process.env.E2E_CORREO!)
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE!)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
   await expect(page).toHaveURL(/\/pedidos\/nuevo/)
 
   // Un pedido nuevo con un cliente nuevo
@@ -69,4 +69,26 @@ test('toma un pedido, lo cobra desde la lista y el recibo sale pagado', async ({
   await fila.getByRole('link', { name: 'Documentos' }).click()
   await expect(page.getByText(/PAGADO/)).toBeVisible()
   await expect(page.getByText('PENDIENTE DE PAGO')).toHaveCount(0)
+})
+
+test('exportar el listado descarga un archivo de cada formato', async ({ page }) => {
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill(process.env.E2E_CORREO!)
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE!)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+
+  await page.goto('/pedidos')
+
+  const excel = await page.request.get('/api/pedidos/exportar?pestana=todos&formato=excel')
+  expect(excel.ok()).toBe(true)
+  expect(excel.headers()['content-type']).toBe(
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
+
+  const pdf = await page.request.get('/api/pedidos/exportar?pestana=todos&formato=pdf')
+  expect(pdf.ok()).toBe(true)
+  expect(pdf.headers()['content-type']).toBe('application/pdf')
+
+  const invalido = await page.request.get('/api/pedidos/exportar?pestana=todos&formato=csv')
+  expect(invalido.status()).toBe(400)
 })

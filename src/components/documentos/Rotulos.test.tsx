@@ -17,7 +17,7 @@ const base: PedidoCompleto = {
   estado: 'confirmado', estadoPago: 'contraentrega', tipoEntrega: 'local',
   transportadora: null, fechaPago: null,
   clienteCodigo: 'CL-0042', clienteNombre: 'Juanito González',
-  clienteTelefono: '312 456 7890', clienteCedula: '1017456789',
+  clienteTelefono: '312 456 7890', clienteCedula: '1017456789', clienteCorreo: null,
   dirLinea: 'Cra 45 # 23-18', dirBarrio: 'La Floresta', dirCiudad: 'Medellín',
   dirDepartamento: 'Antioquia', dirIndicaciones: 'Portería, timbre 302',
   asesorCodigo: '002', valorDomicilio: 8000, descuento: 0,
@@ -52,11 +52,6 @@ describe('RotuloLocal', () => {
     render(<RotuloLocal pedido={base} ajustes={ajustes} />)
     expect(screen.getByText(/Portería, timbre 302/)).toBeDefined()
   })
-
-  it('lleva el aviso de congelado', () => {
-    render(<RotuloLocal pedido={base} ajustes={ajustes} />)
-    expect(screen.getByText(/CONGELADO/)).toBeDefined()
-  })
 })
 
 describe('RotuloNacional', () => {
@@ -89,9 +84,8 @@ describe('RotuloNacional', () => {
     expect(screen.getAllByText(/MI NEGOCIO/)).toHaveLength(2)
   })
 
-  it('lleva el aviso de cadena de frío en grande', () => {
+  it('lleva el aviso de entrega prioritaria', () => {
     render(<RotuloNacional pedido={nacional} ajustes={ajustes} />)
-    expect(screen.getByText(/PRODUCTO CONGELADO/)).toBeDefined()
-    expect(screen.getByText(/CADENA DE FRÍO/)).toBeDefined()
+    expect(screen.getByText(/ENTREGA PRIORITARIA/)).toBeDefined()
   })
 })

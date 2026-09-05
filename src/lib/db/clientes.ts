@@ -3,9 +3,10 @@
 import { crearClienteServidor } from './cliente-supabase'
 import type { Cliente, Direccion, TipoCliente } from '@/lib/tipos'
 import { CLIENTES_POR_PAGINA } from './paginacion'
+import { correoValido } from '@/lib/clientes/validacion'
 
 const CAMPOS = `
-  id, codigo, nombre, telefono, cedula, tipo, notas,
+  id, codigo, nombre, telefono, cedula, correo, tipo, notas,
   direcciones ( id, cliente_id, etiqueta, linea, barrio, ciudad,
                 departamento, indicaciones, es_principal )
 `
@@ -17,7 +18,7 @@ const CAMPOS = `
 // menos columnas hace que la regla la imponga el repositorio, no la memoria
 // de quien escriba la pantalla.
 const CAMPOS_LISTADO = `
-  id, codigo, nombre, telefono, tipo, notas,
+  id, codigo, nombre, telefono, correo, tipo, notas,
   direcciones ( id, cliente_id, etiqueta, linea, barrio, ciudad,
                 departamento, indicaciones, es_principal )
 `
@@ -43,7 +44,7 @@ function mapearDireccion(f: FilaDireccion): Direccion {
 function mapearCliente(f: any): Cliente {
   return {
     id: f.id, codigo: f.codigo, nombre: f.nombre, telefono: f.telefono,
-    cedula: f.cedula, tipo: f.tipo, notas: f.notas,
+    cedula: f.cedula, correo: f.correo, tipo: f.tipo, notas: f.notas,
     direcciones: (f.direcciones ?? []).map(mapearDireccion),
   }
 }
@@ -52,7 +53,7 @@ function mapearCliente(f: any): Cliente {
 function mapearClienteResumen(f: any): ClienteResumen {
   return {
     id: f.id, codigo: f.codigo, nombre: f.nombre, telefono: f.telefono,
-    tipo: f.tipo, notas: f.notas,
+    correo: f.correo, tipo: f.tipo, notas: f.notas,
     direcciones: (f.direcciones ?? []).map(mapearDireccion),
   }
 }
@@ -93,7 +94,7 @@ export async function obtenerCliente(id: string): Promise<Cliente | null> {
 }
 
 export async function crearCliente(
-  datos: { nombre: string; telefono: string; cedula: string; tipo: TipoCliente },
+  datos: { nombre: string; telefono: string; cedula: string; correo: string; tipo: TipoCliente },
   direccion: {
     linea: string; barrio: string; ciudad: string
     departamento: string; indicaciones: string
@@ -101,12 +102,17 @@ export async function crearCliente(
 ): Promise<Cliente> {
   const supabase = await crearClienteServidor()
 
+  if (datos.correo.trim() && !correoValido(datos.correo.trim())) {
+    throw new Error('El correo no tiene un formato válido')
+  }
+
   const { data: cliente, error } = await supabase
     .from('clientes')
     .insert({
       nombre: datos.nombre.trim(),
       telefono: datos.telefono.trim() || null,
       cedula: datos.cedula.trim() || null,
+      correo: datos.correo.trim() || null,
       tipo: datos.tipo,
     })
     .select('id')
@@ -174,10 +180,16 @@ export async function listarClientes(
 /** Cambia la ficha, nunca los pedidos: esos guardan su copia congelada. */
 export async function actualizarCliente(
   id: string,
-  datos: { nombre: string; telefono: string; cedula: string; tipo: TipoCliente; notas: string },
+  datos: {
+    nombre: string; telefono: string; cedula: string; correo: string
+    tipo: TipoCliente; notas: string
+  },
 ): Promise<void> {
   const supabase = await crearClienteServidor()
   if (!datos.nombre.trim()) throw new Error('El cliente necesita un nombre')
+  if (datos.correo.trim() && !correoValido(datos.correo.trim())) {
+    throw new Error('El correo no tiene un formato válido')
+  }
 
   const { error } = await supabase
     .from('clientes')
@@ -185,6 +197,7 @@ export async function actualizarCliente(
       nombre: datos.nombre.trim(),
       telefono: datos.telefono.trim() || null,
       cedula: datos.cedula.trim() || null,
+      correo: datos.correo.trim() || null,
       tipo: datos.tipo,
       notas: datos.notas.trim() || null,
     })
