@@ -26,6 +26,7 @@ function ejemplo(): BorradorGuardado {
     transportadora: '',
     estadoPago: 'pendiente',
     valorDomicilio: 8000,
+    descuento: 4000,
     observaciones: 'Timbre 302',
     guardadoEn: new Date().toISOString(),
   }
@@ -44,6 +45,7 @@ describe('borrador local', () => {
     const leido = leerBorradorLocal(almacen)
     expect(leido?.items).toHaveLength(1)
     expect(leido?.items[0].cantidad).toBe(4)
+    expect(leido?.descuento).toBe(4000)
     expect(leido?.observaciones).toBe('Timbre 302')
     expect(leido?.cliente?.nombre).toBe('Juanito')
   })
@@ -63,5 +65,12 @@ describe('borrador local', () => {
     const viejo = { ...ejemplo(), guardadoEn: new Date(Date.now() - 25 * 3600_000).toISOString() }
     guardarBorradorLocal(viejo, almacen)
     expect(leerBorradorLocal(almacen)).toBeNull()
+  })
+
+  it('normaliza a cero un borrador creado antes del descuento', () => {
+    const { descuento: _descuento, ...sinDescuento } = ejemplo()
+    almacen.setItem('pedido-borrador', JSON.stringify(sinDescuento))
+
+    expect(leerBorradorLocal(almacen)?.descuento).toBe(0)
   })
 })

@@ -12,6 +12,7 @@ interface Props {
   items: ItemPedido[]
   totales: Totales
   valorDomicilio: number
+  descuento: number
   tipoEntrega: TipoEntrega
   transportadora: string
   transportadoras: Transportadora[]
@@ -20,6 +21,7 @@ interface Props {
   problemas: string[]
   confirmando: boolean
   onCambiarDomicilio: (valor: number) => void
+  onCambiarDescuento: (valor: number) => void
   onCambiarEntrega: (tipo: TipoEntrega) => void
   onCambiarTransportadora: (nombre: string) => void
   onCambiarPago: (estado: EstadoPago) => void
@@ -117,6 +119,23 @@ export function ResumenPedido(p: Props) {
           <span>Subtotal · {p.totales.totalKg} kg</span>
           <span className="tabular-nums">{formatearPesosSinSimbolo(p.totales.subtotal)}</span>
         </div>
+        <div className="mt-1 flex items-center justify-between text-cuerpo-md text-tinta-tenue">
+          <label htmlFor="descuento">Descuento</label>
+          <input
+            id="descuento" value={p.descuento || ''} inputMode="numeric"
+            onChange={(e) => {
+              const valor = Number(e.target.value.replace(/\D/g, '')) || 0
+              p.onCambiarDescuento(Math.min(valor, p.totales.subtotal))
+            }}
+            className="w-28 rounded-md border border-borde-suave bg-tarjeta-baja px-2 py-1 text-right text-cuerpo-md tabular-nums text-tinta outline-none transition-colors focus:border-primario"
+          />
+        </div>
+        {p.descuento > 0 && (
+          <div className="mt-1 flex justify-between text-cuerpo-md text-primario">
+            <span>Descuento</span>
+            <span className="tabular-nums">−{formatearPesosSinSimbolo(p.descuento)}</span>
+          </div>
+        )}
         <div className="mt-1 flex items-center justify-between text-cuerpo-md text-tinta-tenue">
           <label htmlFor="domicilio">Domicilio</label>
           <input

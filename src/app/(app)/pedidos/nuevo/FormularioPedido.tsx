@@ -38,13 +38,14 @@ export function FormularioPedido({ productos, transportadoras, valorDomicilioDef
   const [transportadora, setTransportadora] = useState('')
   const [estadoPago, setEstadoPago] = useState<EstadoPago>('pendiente')
   const [valorDomicilio, setValorDomicilio] = useState(valorDomicilioDefault)
+  const [descuento, setDescuento] = useState(0)
   const [observaciones, setObservaciones] = useState('')
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const totales = useMemo(
-    () => calcularTotales(items, valorDomicilio, 0),
-    [items, valorDomicilio],
+    () => calcularTotales(items, valorDomicilio, descuento),
+    [items, valorDomicilio, descuento],
   )
 
   const cantidades = useMemo(
@@ -96,8 +97,15 @@ export function FormularioPedido({ productos, transportadoras, valorDomicilioDef
     setTransportadora(guardado.transportadora)
     setEstadoPago(guardado.estadoPago)
     setValorDomicilio(guardado.valorDomicilio)
+    setDescuento(guardado.descuento)
     setObservaciones(guardado.observaciones)
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    setDescuento((actual) => Math.min(actual, totales.subtotal))
+  }, [totales.subtotal])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Guardar en cada cambio, sin ir a la red
@@ -105,11 +113,11 @@ export function FormularioPedido({ productos, transportadoras, valorDomicilioDef
     if (!cliente && items.length === 0) return
     guardarBorradorLocal({
       cliente, direccion, items, tipoEntrega, transportadora,
-      estadoPago, valorDomicilio, observaciones,
+      estadoPago, valorDomicilio, descuento, observaciones,
       guardadoEn: new Date().toISOString(),
     })
   }, [cliente, direccion, items, tipoEntrega, transportadora,
-      estadoPago, valorDomicilio, observaciones])
+      estadoPago, valorDomicilio, descuento, observaciones])
 
   function escogerCliente(nuevo: Cliente) {
     setCliente(nuevo)
@@ -157,7 +165,7 @@ export function FormularioPedido({ productos, transportadoras, valorDomicilioDef
         direccionId: direccion!.id,
         items, tipoEntrega,
         transportadora: transportadora || null,
-        estadoPago, valorDomicilio, descuento: 0, observaciones,
+        estadoPago, valorDomicilio, descuento, observaciones,
       })
       await confirmarPedido(id)
       limpiarBorradorLocal()
@@ -239,11 +247,13 @@ export function FormularioPedido({ productos, transportadoras, valorDomicilioDef
             )}
             <ResumenPedido
               items={items} totales={totales} valorDomicilio={valorDomicilio}
+              descuento={descuento}
               tipoEntrega={tipoEntrega} transportadora={transportadora}
               transportadoras={transportadoras}
               estadoPago={estadoPago} observaciones={observaciones}
               problemas={problemas} confirmando={confirmando}
               onCambiarDomicilio={setValorDomicilio}
+              onCambiarDescuento={(valor) => setDescuento(Math.min(valor, totales.subtotal))}
               onCambiarEntrega={setTipoEntrega}
               onCambiarTransportadora={setTransportadora}
               onCambiarPago={setEstadoPago}
