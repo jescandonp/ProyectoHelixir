@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { afterEach, describe, it, expect } from 'vitest'
+import { cleanup, render, screen } from '@testing-library/react'
 import { Recibo } from './Recibo'
 import type { PedidoCompleto } from '@/lib/db/pedidos'
 import type { Ajustes } from '@/lib/db/ajustes'
+
+afterEach(cleanup)
 
 const ajustes: Ajustes = {
   nombreNegocio: 'MI NEGOCIO', eslogan: 'Helado Artesanal', logoUrl: null,
@@ -16,7 +18,7 @@ const pedido: PedidoCompleto = {
   estado: 'confirmado', estadoPago: 'pendiente', tipoEntrega: 'local',
   transportadora: null, fechaPago: null,
   clienteCodigo: 'CL-0042', clienteNombre: 'Juanito González',
-  clienteTelefono: '312 456 7890', clienteCedula: '1017456789',
+  clienteTelefono: '312 456 7890', clienteCedula: '1017456789', clienteCorreo: null,
   dirLinea: 'Cra 45 # 23-18', dirBarrio: 'La Floresta', dirCiudad: 'Medellín',
   dirDepartamento: 'Antioquia', dirIndicaciones: 'Portería, timbre 302',
   asesorCodigo: '002', valorDomicilio: 8000, descuento: 0,
@@ -45,10 +47,10 @@ describe('Recibo', () => {
     expect(screen.getByText(/10 Kg/)).toBeDefined()
   })
 
-  it('enmascara la cédula dejando solo los primeros cuatro dígitos', () => {
+  it('muestra la cédula completa del cliente', () => {
     render(<Recibo pedido={pedido} ajustes={ajustes} />)
-    expect(screen.getByText('1017xxxxxx')).toBeDefined()
-    expect(screen.queryByText('1017456789')).toBeNull()
+    expect(screen.getByText('1017456789')).toBeDefined()
+    expect(screen.queryByText('1017xxxxxx')).toBeNull()
   })
 
   it('muestra PENDIENTE DE PAGO con los datos de pago cuando no está pagado', () => {
@@ -83,5 +85,18 @@ describe('Recibo', () => {
     )
     expect(screen.getByText('4 kg × $ 22.000')).toBeDefined()
     expect(screen.queryByText('1 kg × $ 22.000')).toBeNull()
+  })
+
+  it('muestra el descuento antes del domicilio cuando es positivo', () => {
+    render(<Recibo pedido={{ ...pedido, descuento: 4000, total: 236000 }} ajustes={ajustes} />)
+
+    expect(screen.getByText('Descuento:')).toBeDefined()
+    expect(screen.getByText('-$ 4.000')).toBeDefined()
+  })
+
+  it('oculta la línea de descuento cuando su valor es cero', () => {
+    render(<Recibo pedido={pedido} ajustes={ajustes} />)
+
+    expect(screen.queryByText('Descuento:')).toBeNull()
   })
 })

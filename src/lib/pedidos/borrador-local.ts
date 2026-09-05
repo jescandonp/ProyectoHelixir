@@ -13,6 +13,7 @@ export interface BorradorGuardado {
   transportadora: string
   estadoPago: EstadoPago
   valorDomicilio: number
+  descuento: number
   observaciones: string
   guardadoEn: string
 }
@@ -33,7 +34,7 @@ export function leerBorradorLocal(almacen = almacenPorDefecto()): BorradorGuarda
     const borrador = JSON.parse(crudo) as BorradorGuardado
     const edad = Date.now() - new Date(borrador.guardadoEn).getTime()
     if (!Number.isFinite(edad) || edad > VIGENCIA_MS) return null
-    return borrador
+    return { ...borrador, descuento: borrador.descuento ?? 0 }
   } catch {
     return null   // contenido corrupto: se ignora, no se rompe la pantalla
   }

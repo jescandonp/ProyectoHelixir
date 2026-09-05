@@ -9,6 +9,7 @@ import {
   actualizarCliente, agregarDireccion, actualizarDireccion, marcarDireccionPrincipal,
   type DatosDireccion,
 } from '@/lib/db/clientes'
+import { correoValido } from '@/lib/clientes/validacion'
 import {
   TARJETA, CAMPO, CAMPO_CHICO, CHIP, CHIP_CODIGO, ETIQUETA, ETIQUETA_SECCION,
   BOTON_PRIMARIO, BOTON_SECUNDARIO, BOTON_FANTASMA, AVISO_ERROR, AVISO_EXITO,
@@ -39,6 +40,7 @@ export function FichaCliente({
     nombre: cliente.nombre,
     telefono: cliente.telefono ?? '',
     cedula: cliente.cedula ?? '',
+    correo: cliente.correo ?? '',
     tipo: cliente.tipo,
     notas: cliente.notas ?? '',
   })
@@ -106,6 +108,12 @@ export function FichaCliente({
               className={CAMPO} />
           </label>
           <label className="block">
+            <span className={ETIQUETA}>Correo</span>
+            <input type="email" value={datos.correo}
+              onChange={(e) => cambiarDatos({ correo: e.target.value })}
+              className={CAMPO} />
+          </label>
+          <label className="block">
             <span className={ETIQUETA}>
               Cédula
               <button type="button" onClick={() => setCedulaVisible(!cedulaVisible)}
@@ -137,7 +145,13 @@ export function FichaCliente({
             className={CAMPO} />
         </label>
         <button type="button" disabled={pendiente}
-          onClick={() => ejecutar(() => actualizarCliente(cliente.id, datos), 'Guardado')}
+          onClick={() => {
+            if (datos.correo.trim() && !correoValido(datos.correo.trim())) {
+              setError('El correo no tiene un formato válido')
+              return
+            }
+            ejecutar(() => actualizarCliente(cliente.id, datos), 'Guardado')
+          }}
           className={`${BOTON_PRIMARIO} mt-4`}>
           Guardar
         </button>

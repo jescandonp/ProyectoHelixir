@@ -1,12 +1,13 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Recibo } from '@/components/documentos/Recibo'
 import { RotuloLocal } from '@/components/documentos/RotuloLocal'
 import { RotuloNacional } from '@/components/documentos/RotuloNacional'
 import { descargarComoPng } from '@/lib/documentos/a-png'
-import { BOTON_PRIMARIO, BOTON_SECUNDARIO, BOTON_EXITO } from '@/components/estilos'
+import { BOTON_PRIMARIO, BOTON_SECUNDARIO, BOTON_EXITO, AVISO_ERROR, AVISO_EXITO } from '@/components/estilos'
+import { enviarReciboPorCorreo } from '@/lib/db/pedidos'
 import type { PedidoCompleto } from '@/lib/db/pedidos'
 import type { Ajustes } from '@/lib/db/ajustes'
 
@@ -18,6 +19,9 @@ export function VistaDocumentos({
   const [pestana, setPestana] = useState<Pestana>('recibo')
   const referencia = useRef<HTMLDivElement>(null)
   const [generando, setGenerando] = useState(false)
+  const [pendienteCorreo, iniciarCorreo] = useTransition()
+  const [mensajeCorreo, setMensajeCorreo] = useState<string | null>(null)
+  const [errorCorreo, setErrorCorreo] = useState<string | null>(null)
 
   /** `@page` no acepta selectores, así que la regla de tamaño se inyecta
    *  y se reemplaza justo antes de abrir el diálogo de impresión. */
@@ -48,6 +52,19 @@ export function VistaDocumentos({
     } finally {
       setGenerando(false)
     }
+  }
+
+  function enviarPorCorreo() {
+    setErrorCorreo(null)
+    setMensajeCorreo(null)
+    iniciarCorreo(async () => {
+      try {
+        await enviarReciboPorCorreo(pedido.id)
+        setMensajeCorreo('Recibo enviado por correo')
+      } catch (error) {
+        setErrorCorreo(error instanceof Error ? error.message : 'No se pudo enviar el correo')
+      }
+    })
   }
 
   return (
@@ -81,7 +98,26 @@ export function VistaDocumentos({
         <button type="button" onClick={descargar} disabled={generando} className={BOTON_EXITO}>
           {generando ? 'Generando…' : '⬇ Imagen para WhatsApp'}
         </button>
+        {pestana === 'recibo' && (
+          <>
+            <a href={`/api/pedidos/${pedido.id}/recibo`} className={BOTON_SECUNDARIO}>
+              ⬇ Descargar PDF
+            </a>
+            <button
+              type="button"
+              onClick={enviarPorCorreo}
+              disabled={pendienteCorreo || !pedido.clienteCorreo}
+              title={!pedido.clienteCorreo ? 'Este cliente no tiene correo registrado' : undefined}
+              className={BOTON_SECUNDARIO}
+            >
+              {pendienteCorreo ? 'Enviando…' : '✉ Enviar por correo'}
+            </button>
+          </>
+        )}
       </div>
+
+      {mensajeCorreo && <p className={`${AVISO_EXITO} solo-pantalla mb-4`}>{mensajeCorreo}</p>}
+      {errorCorreo && <p className={`${AVISO_ERROR} solo-pantalla mb-4`}>{errorCorreo}</p>}
 
       <div className="flex justify-center">
         {/* La sombra va en este envoltorio y no en la hoja: `html-to-image`

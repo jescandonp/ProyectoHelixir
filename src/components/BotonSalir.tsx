@@ -20,7 +20,7 @@ export function BotonSalir() {
 
   return (
     <button
-      type="button" onClick={salir} disabled={saliendo}
+      type="button" onClick={salir} disabled={saliendo} aria-busy={saliendo}
       className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-etiqueta-lg text-tinta-tenue transition-colors hover:text-primario disabled:opacity-50"
     >
       <IconoSalir className="h-[18px] w-[18px] shrink-0" />

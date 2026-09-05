@@ -1,9 +1,13 @@
 'use server'
 
 import { crearClienteServidor, obtenerUsuarioActual } from './cliente-supabase'
-import { calcularTotales, calcularSubtotalItem } from '@/lib/pedidos/calculos'
+import { calcularTotales, calcularSubtotalItem, validarDescuento } from '@/lib/pedidos/calculos'
 import { validarParaConfirmar } from '@/lib/pedidos/validacion'
 import { puedeTransicionar } from '@/lib/pedidos/estados'
+import { obtenerAjustes } from './ajustes'
+import { renderReciboPdf } from '@/lib/documentos/pdf/ReciboPdf'
+import { construirCorreoRecibo } from '@/lib/correo/recibo'
+import { enviarCorreoConAdjunto } from '@/lib/correo/resend'
 import type {
   ItemPedido, EstadoPedido, EstadoPago, TipoEntrega,
 } from '@/lib/tipos'
@@ -34,6 +38,7 @@ export interface PedidoCompleto {
   clienteNombre: string
   clienteTelefono: string | null
   clienteCedula: string | null
+  clienteCorreo: string | null
 
   dirLinea: string | null
   dirBarrio: string | null
@@ -66,6 +71,8 @@ export async function crearBorrador(): Promise<string> {
 export async function guardarBorrador(id: string, borrador: DatosBorrador): Promise<void> {
   const supabase = await crearClienteServidor()
   const totales = calcularTotales(borrador.items, borrador.valorDomicilio, borrador.descuento)
+  const errorDescuento = validarDescuento(borrador.descuento, totales.subtotal)
+  if (errorDescuento) throw new Error(errorDescuento)
 
   const { error } = await supabase
     .from('pedidos')
@@ -109,7 +116,7 @@ export async function confirmarPedido(id: string): Promise<{ consecutivo: string
 
   const { data: pedido, error } = await supabase
     .from('pedidos')
-    .select('*, pedido_items(*), clientes(codigo, nombre, telefono, cedula), direcciones(*)')
+    .select('*, pedido_items(*), clientes(codigo, nombre, telefono, cedula, correo), direcciones(*)')
     .eq('id', id)
     .single()
 
@@ -140,6 +147,8 @@ export async function confirmarPedido(id: string): Promise<{ consecutivo: string
 
   const usuario = await obtenerUsuarioActual()
   const totales = calcularTotales(items, pedido.valor_domicilio, pedido.descuento)
+  const errorDescuento = validarDescuento(pedido.descuento, totales.subtotal)
+  if (errorDescuento) throw new Error(errorDescuento)
 
   // Se congela todo lo que va impreso: si mañana cambia la ficha del cliente,
   // este pedido sigue diciendo lo que decía el día que salió.
@@ -151,6 +160,7 @@ export async function confirmarPedido(id: string): Promise<{ consecutivo: string
       cliente_nombre: pedido.clientes.nombre,
       cliente_telefono: pedido.clientes.telefono,
       cliente_cedula: pedido.clientes.cedula,
+      cliente_correo: pedido.clientes.correo,
       dir_linea: pedido.direcciones?.linea ?? null,
       dir_barrio: pedido.direcciones?.barrio ?? null,
       dir_ciudad: pedido.direcciones?.ciudad ?? null,
@@ -198,6 +208,7 @@ export async function obtenerPedido(id: string): Promise<PedidoCompleto | null> 
     clienteNombre: data.cliente_nombre ?? '',
     clienteTelefono: data.cliente_telefono,
     clienteCedula: data.cliente_cedula,
+    clienteCorreo: data.cliente_correo,
     dirLinea: data.dir_linea,
     dirBarrio: data.dir_barrio,
     dirCiudad: data.dir_ciudad,
@@ -333,4 +344,14 @@ export async function marcarEnviado(id: string): Promise<void> {
 
 export async function marcarEntregado(id: string): Promise<void> {
   return cambiarEstado(id, 'entregado')
+}
+
+export async function enviarReciboPorCorreo(id: string): Promise<void> {
+  const pedido = await obtenerPedido(id)
+  if (!pedido) throw new Error('No se encontró el pedido')
+
+  const ajustes = await obtenerAjustes()
+  const pdf = await renderReciboPdf(pedido, ajustes)
+  const correo = construirCorreoRecibo(pedido, ajustes, pdf)
+  await enviarCorreoConAdjunto(correo)
 }

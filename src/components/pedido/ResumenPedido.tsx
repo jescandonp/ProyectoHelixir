@@ -1,22 +1,27 @@
 'use client'
 
+import { useState } from 'react'
 import type { ItemPedido, Totales, TipoEntrega, EstadoPago } from '@/lib/tipos'
 import { formatearPesos, formatearPesosSinSimbolo } from '@/lib/dinero'
 import { calcularSubtotalItem } from '@/lib/pedidos/calculos'
 import { TARJETA, ETIQUETA_SECCION, CAMPO, BOTON_PRIMARIO, AVISO_ERROR } from '@/components/estilos'
 import { IconoBolsa, IconoTienda, IconoCamion } from '@/components/iconos'
+import type { Transportadora } from '@/lib/db/transportadoras'
 
 interface Props {
   items: ItemPedido[]
   totales: Totales
   valorDomicilio: number
+  descuento: number
   tipoEntrega: TipoEntrega
   transportadora: string
+  transportadoras: Transportadora[]
   estadoPago: EstadoPago
   observaciones: string
   problemas: string[]
   confirmando: boolean
   onCambiarDomicilio: (valor: number) => void
+  onCambiarDescuento: (valor: number) => void
   onCambiarEntrega: (tipo: TipoEntrega) => void
   onCambiarTransportadora: (nombre: string) => void
   onCambiarPago: (estado: EstadoPago) => void
@@ -34,6 +39,8 @@ const PAGOS: { estado: EstadoPago; texto: string }[] = [
   { estado: 'contraentrega', texto: 'Contraent.' },
   { estado: 'pagado', texto: 'Pagado' },
 ]
+
+const OTRA_TRANSPORTADORA = '__otra__'
 
 /** Un grupo de opciones excluyentes, del tamaño de un dedo. Lo usan tanto la
  *  entrega como el estado de pago para que las dos filas se lean igual. */
@@ -66,6 +73,19 @@ function Segmentado<T extends string>({
 
 export function ResumenPedido(p: Props) {
   const bloqueado = p.problemas.length > 0 || p.confirmando
+  const [otraForzada, setOtraForzada] = useState(false)
+  const enLista = p.transportadoras.some((t) => t.nombre === p.transportadora)
+  const modoOtra = otraForzada || (!!p.transportadora && !enLista)
+
+  function alElegirTransportadora(valor: string) {
+    if (valor === OTRA_TRANSPORTADORA) {
+      setOtraForzada(true)
+      p.onCambiarTransportadora('')
+    } else {
+      setOtraForzada(false)
+      p.onCambiarTransportadora(valor)
+    }
+  }
 
   return (
     <div className={`${TARJETA} overflow-hidden`}>
@@ -100,6 +120,23 @@ export function ResumenPedido(p: Props) {
           <span className="tabular-nums">{formatearPesosSinSimbolo(p.totales.subtotal)}</span>
         </div>
         <div className="mt-1 flex items-center justify-between text-cuerpo-md text-tinta-tenue">
+          <label htmlFor="descuento">Descuento</label>
+          <input
+            id="descuento" value={p.descuento || ''} inputMode="numeric"
+            onChange={(e) => {
+              const valor = Number(e.target.value.replace(/\D/g, '')) || 0
+              p.onCambiarDescuento(Math.min(valor, p.totales.subtotal))
+            }}
+            className="w-28 rounded-md border border-borde-suave bg-tarjeta-baja px-2 py-1 text-right text-cuerpo-md tabular-nums text-tinta outline-none transition-colors focus:border-primario"
+          />
+        </div>
+        {p.descuento > 0 && (
+          <div className="mt-1 flex justify-between text-cuerpo-md text-primario">
+            <span>Descuento</span>
+            <span className="tabular-nums">−{formatearPesosSinSimbolo(p.descuento)}</span>
+          </div>
+        )}
+        <div className="mt-1 flex items-center justify-between text-cuerpo-md text-tinta-tenue">
           <label htmlFor="domicilio">Domicilio</label>
           <input
             id="domicilio" value={p.valorDomicilio || ''} inputMode="numeric"
@@ -123,10 +160,29 @@ export function ResumenPedido(p: Props) {
             valor={p.tipoEntrega} onCambiar={p.onCambiarEntrega}
           />
           {p.tipoEntrega === 'nacional' && (
-            <input
-              value={p.transportadora} onChange={(e) => p.onCambiarTransportadora(e.target.value)}
-              placeholder="Transportadora" className={`${CAMPO} mt-2`}
-            />
+            <div className="mt-2 space-y-2">
+              <select
+                value={modoOtra ? OTRA_TRANSPORTADORA : p.transportadora}
+                onChange={(e) => alElegirTransportadora(e.target.value)}
+                aria-label="Transportadora"
+                className={`${CAMPO} bg-tarjeta`}
+              >
+                <option value="" disabled>Selecciona transportadora…</option>
+                {p.transportadoras.map((t) => (
+                  <option key={t.id} value={t.nombre}>{t.nombre}</option>
+                ))}
+                <option value={OTRA_TRANSPORTADORA}>Otra…</option>
+              </select>
+              {modoOtra && (
+                <input
+                  value={p.transportadora}
+                  onChange={(e) => p.onCambiarTransportadora(e.target.value)}
+                  placeholder="Nombre de la transportadora"
+                  aria-label="Nombre de la transportadora"
+                  className={CAMPO}
+                />
+              )}
+            </div>
           )}
         </div>
 

@@ -64,4 +64,41 @@ describe('editar un cliente', () => {
       await limpiarClienteDePrueba(cliente!.id)
     }
   }, 30000)
+
+  it('el correo tampoco se reescribe en un pedido confirmado', async () => {
+    const { data: cliente } = await supabase
+      .from('clientes')
+      .insert({ nombre: 'Nombre Viejo', correo: 'viejo@correo.com' })
+      .select('id, codigo').single()
+
+    try {
+      const { data: pedido } = await supabase
+        .from('pedidos')
+        .insert({
+          cliente_id: cliente!.id,
+          estado: 'confirmado',
+          cliente_nombre: 'Nombre Viejo',
+          cliente_codigo: cliente!.codigo,
+          cliente_correo: 'viejo@correo.com',
+          dir_ciudad: 'Medellín',
+          total: 50000,
+        })
+        .select('id').single()
+      await supabase.rpc('asignar_consecutivo', { p_pedido_id: pedido!.id })
+
+      await supabase
+        .from('clientes')
+        .update({ correo: 'nuevo@correo.com' })
+        .eq('id', cliente!.id)
+
+      const { data: despues } = await supabase
+        .from('pedidos')
+        .select('cliente_correo')
+        .eq('id', pedido!.id).single()
+
+      expect(despues!.cliente_correo).toBe('viejo@correo.com')
+    } finally {
+      await limpiarClienteDePrueba(cliente!.id)
+    }
+  }, 30000)
 })

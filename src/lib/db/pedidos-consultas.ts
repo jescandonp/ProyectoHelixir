@@ -3,6 +3,7 @@
 import { crearClienteServidor } from './cliente-supabase'
 import { filtrarPedidosReales } from './filtros-pedidos'
 import { POR_PAGINA } from './paginacion'
+import { traerTodoPaginado } from './paginado'
 import { rangoDelDia, type Rango } from '@/lib/periodo'
 import type { EstadoPedido, EstadoPago } from '@/lib/tipos'
 
@@ -53,38 +54,68 @@ function mapearFila(f: any): FilaPedido {
   }
 }
 
+/** Encadena los filtros comunes a `listarPedidos` y `listarPedidosParaExportar`.
+ *  `T` no lleva restricción de tipo por la misma razón documentada en
+ *  `filtrarPedidosReales` (filtros-pedidos.ts): las firmas sobrecargadas del
+ *  `PostgrestFilterBuilder` real disparan "Type instantiation is excessively
+ *  deep" si TypeScript intenta comprobarlas contra una restricción genérica. */
+function aplicarFiltros<T>(consulta: T, filtros: Omit<FiltrosPedidos, 'pagina'>): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let c = consulta as any
+  if (filtros.rango) c = c.gte('fecha', filtros.rango.desde).lt('fecha', filtros.rango.hasta)
+  if (filtros.estado) c = c.eq('estado', filtros.estado)
+  if (filtros.estadoPago) c = c.eq('estado_pago', filtros.estadoPago)
+  if (filtros.soloPorCobrar) c = c.neq('estado_pago', 'pagado').neq('estado', 'anulado')
+  if (filtros.clienteId) c = c.eq('cliente_id', filtros.clienteId)
+  if (filtros.asesorId) c = c.eq('asesor_id', filtros.asesorId)
+  return c as T
+}
+
 export async function listarPedidos(filtros: FiltrosPedidos): Promise<PaginaPedidos> {
   const supabase = await crearClienteServidor()
   const pagina = filtros.pagina ?? 0
   const primera = pagina * POR_PAGINA
 
-  let consulta = filtrarPedidosReales(
-    supabase
-      .from('pedidos')
-      .select(COLUMNAS, { count: 'exact' }),
+  const consulta = aplicarFiltros(
+    filtrarPedidosReales(supabase.from('pedidos').select(COLUMNAS, { count: 'exact' })),
+    filtros,
   )
-    // Dos pedidos pueden compartir el mismo instante en `fecha`; sin un
-    // desempate por `id` el orden entre páginas no queda determinado y una
-    // fila puede repetirse o desaparecer al paginar.
     .order('fecha', { ascending: false })
     .order('id', { ascending: false })
     .range(primera, primera + POR_PAGINA - 1)
-
-  if (filtros.rango) {
-    consulta = consulta.gte('fecha', filtros.rango.desde).lt('fecha', filtros.rango.hasta)
-  }
-  if (filtros.estado) consulta = consulta.eq('estado', filtros.estado)
-  if (filtros.estadoPago) consulta = consulta.eq('estado_pago', filtros.estadoPago)
-  if (filtros.soloPorCobrar) {
-    consulta = consulta.neq('estado_pago', 'pagado').neq('estado', 'anulado')
-  }
-  if (filtros.clienteId) consulta = consulta.eq('cliente_id', filtros.clienteId)
-  if (filtros.asesorId) consulta = consulta.eq('asesor_id', filtros.asesorId)
 
   const { data, error, count } = await consulta
   if (error) throw new Error(`No se pudo leer la lista de pedidos: ${error.message}`)
 
   return { filas: (data ?? []).map(mapearFila), total: count ?? 0 }
+}
+
+/** Igual que `listarPedidos`, pero sin `.range()` fijo: trae todas las filas
+ *  que cumplen el filtro. La usa la exportación a Excel/PDF, donde "el
+ *  resultado filtrado" tiene que ser todo, no la página de 50 que se ve en
+ *  pantalla. PostgREST igual aplica su propio techo (`max_rows` en
+ *  supabase/config.toml) a cada consulta individual, así que se trae en
+ *  bloques con `traerTodoPaginado` — quitar solo el `.range()` de arriba,
+ *  sin paginar por debajo, trunca en silencio cualquier filtro con más de
+ *  `max_rows` pedidos. */
+export async function listarPedidosParaExportar(
+  filtros: Omit<FiltrosPedidos, 'pagina'>,
+): Promise<FilaPedido[]> {
+  const supabase = await crearClienteServidor()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const datos = await traerTodoPaginado<any>((desde, hasta) =>
+    aplicarFiltros(
+      filtrarPedidosReales(supabase.from('pedidos').select(COLUMNAS)),
+      filtros,
+    )
+      .order('fecha', { ascending: false })
+      .order('id', { ascending: false })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .range(desde, hasta) as any,
+  )
+
+  return datos.map(mapearFila)
 }
 
 /** PostgREST no suma sin una función SQL, y meter la lógica del negocio en
