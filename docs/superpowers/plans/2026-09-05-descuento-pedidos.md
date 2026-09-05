@@ -33,7 +33,7 @@
 - Modify: `src/lib/pedidos/calculos.ts`
 - Modify: `src/lib/pedidos/calculos.test.ts`
 
-- [ ] **Step 1: Escribir pruebas que fallen para la nueva fórmula y frontera**
+- [x] **Step 1: Escribir pruebas que fallen para la nueva fórmula y frontera**
 
   Añadir al `describe('calcularTotales')` estos casos:
 
@@ -52,7 +52,7 @@
   })
   ```
 
-- [ ] **Step 2: Ejecutar la prueba enfocada y comprobar el fallo**
+- [x] **Step 2: Ejecutar la prueba enfocada y comprobar el fallo**
 
   Run:
 
@@ -63,7 +63,7 @@
   Expected: el caso con descuento excesivo falla porque la fórmula actual también
   descuenta el domicilio, y `validarDescuento` aún no existe.
 
-- [ ] **Step 3: Implementar la mínima regla reutilizable**
+- [x] **Step 3: Implementar la mínima regla reutilizable**
 
   En `calculos.ts`, exportar una validación pura y ajustar el total:
 
@@ -85,13 +85,13 @@
   Conservar `subtotal` y `totalKg` como hoy. No añadir `subtotalNeto` al tipo
   persistido: es derivable y no debe duplicarse.
 
-- [ ] **Step 4: Ejecutar la prueba enfocada y confirmar que pasa**
+- [x] **Step 4: Ejecutar la prueba enfocada y confirmar que pasa**
 
   Run el mismo comando del paso 2.
 
   Expected: todas las pruebas de `calculos.test.ts` PASS.
 
-- [ ] **Step 5: Commit del corte económico**
+- [x] **Step 5: Commit del corte económico**
 
   ```powershell
   git add src/lib/pedidos/calculos.ts src/lib/pedidos/calculos.test.ts
@@ -107,7 +107,7 @@
 - Modify: `src/components/pedido/ResumenPedido.tsx`
 - Modify: `src/components/pedido/ResumenPedido.test.tsx`
 
-- [ ] **Step 1: Escribir pruebas de borrador e interfaz**
+- [x] **Step 1: Escribir pruebas de borrador e interfaz**
 
   Agregar `descuento: 4000` al fixture `ejemplo()` y comprobarlo al leer.
   Añadir además un caso de JSON anterior sin el campo:
@@ -123,7 +123,7 @@
   `onCambiarDescuento: vi.fn()`. Probar que el input `aria-label="Descuento"`
   comunica `4000` y que la línea `Descuento` aparece con un total positivo.
 
-- [ ] **Step 2: Ejecutar las dos pruebas antes de implementar**
+- [x] **Step 2: Ejecutar las dos pruebas antes de implementar**
 
   Run:
 
@@ -133,7 +133,7 @@
 
   Expected: FAIL por la propiedad y callback inexistentes.
 
-- [ ] **Step 3: Implementar estado, normalización y UI controlada**
+- [x] **Step 3: Implementar estado, normalización y UI controlada**
 
   - Declarar `descuento: number` en `BorradorGuardado`; en `leerBorradorLocal`
     retornar `{ ...borrador, descuento: borrador.descuento ?? 0 }`.
@@ -163,13 +163,13 @@
   El componente padre debe recortar el valor si el subtotal baja al retirar
   productos, antes de guardar o confirmar el borrador.
 
-- [ ] **Step 4: Ejecutar pruebas de interfaz y borrador**
+- [x] **Step 4: Ejecutar pruebas de interfaz y borrador**
 
   Run el comando del paso 2.
 
   Expected: PASS, incluido el borrador antiguo convertido a `$0`.
 
-- [ ] **Step 5: Commit del flujo de creación**
+- [x] **Step 5: Commit del flujo de creación**
 
   ```powershell
   git add src/lib/pedidos/borrador-local.ts src/lib/pedidos/borrador-local.test.ts src/app/(app)/pedidos/nuevo/FormularioPedido.tsx src/components/pedido/ResumenPedido.tsx src/components/pedido/ResumenPedido.test.tsx
@@ -182,19 +182,19 @@
 - Modify: `src/lib/db/pedidos.ts`
 - Modify: `src/lib/pedidos/calculos.test.ts`
 
-- [ ] **Step 1: Añadir caso para demostrar que el validador es consumible por servidor**
+- [x] **Step 1: Añadir caso para demostrar que el validador es consumible por servidor**
 
   Añadir una prueba de `validarDescuento(4000, 22000)` que espere `null` y
   una de `validarDescuento(22001, 22000)` que espere exactamente
   `El descuento no puede superar el subtotal de productos`.
 
-- [ ] **Step 2: Ejecutar la prueba enfocada**
+- [x] **Step 2: Ejecutar la prueba enfocada**
 
   Run el comando de Task 1, Step 2.
 
   Expected: PASS para el contrato del validador antes de conectarlo a la base.
 
-- [ ] **Step 3: Aplicar la guarda antes de cualquier update**
+- [x] **Step 3: Aplicar la guarda antes de cualquier update**
 
   En `guardarBorrador`, inmediatamente después de calcular `totales`, agregar:
 
@@ -207,7 +207,7 @@
   guarda `.eq('estado', 'borrador')`; no añadir rutas ni mutaciones para
   pedidos confirmados.
 
-- [ ] **Step 4: Ejecutar tipo y las pruebas económicas**
+- [x] **Step 4: Ejecutar tipo y las pruebas económicas**
 
   Run:
 
@@ -218,7 +218,7 @@
 
   Expected: ambos comandos terminan con exit code 0.
 
-- [ ] **Step 5: Commit de la guarda de persistencia**
+- [x] **Step 5: Commit de la guarda de persistencia**
 
   ```powershell
   git add src/lib/db/pedidos.ts src/lib/pedidos/calculos.test.ts
@@ -235,7 +235,7 @@
 - Modify: `src/lib/correo/recibo.ts`
 - Modify: `src/lib/correo/recibo.test.ts`
 
-- [ ] **Step 1: Escribir pruebas de presentación condicional**
+- [x] **Step 1: Escribir pruebas de presentación condicional**
 
   Usar el fixture de cada archivo con `descuento: 4000` y `total: 236000`.
   En HTML y correo esperar `Descuento` y `$ 4.000`; con el fixture original
@@ -243,7 +243,7 @@
   PDF conservar el smoke test de buffer y añadir una ejecución con el fixture
   descontado.
 
-- [ ] **Step 2: Ejecutar las pruebas de artefactos y comprobar el fallo**
+- [x] **Step 2: Ejecutar las pruebas de artefactos y comprobar el fallo**
 
   Run:
 
@@ -254,7 +254,7 @@
   Expected: los casos positivos fallan porque todavía no se pinta ni se
   incluye el descuento.
 
-- [ ] **Step 3: Mostrar el mismo desglose en los tres consumidores**
+- [x] **Step 3: Mostrar el mismo desglose en los tres consumidores**
 
   Entre `Subtotal` y `Valor Domicilio`, usar la condición común:
 
@@ -272,13 +272,13 @@
   descuento solo si aplica, domicilio y total, usando `formatearPesos`; no
   cambiar destinatario, asunto ni adjunto.
 
-- [ ] **Step 4: Ejecutar las pruebas de artefactos**
+- [x] **Step 4: Ejecutar las pruebas de artefactos**
 
   Run el comando del paso 2.
 
   Expected: PASS con y sin descuento, y PDF no vacío.
 
-- [ ] **Step 5: Commit de trazabilidad documental**
+- [x] **Step 5: Commit de trazabilidad documental**
 
   ```powershell
   git add src/components/documentos/Recibo.tsx src/components/documentos/Recibo.test.tsx src/lib/documentos/pdf/ReciboPdf.tsx src/lib/documentos/pdf/ReciboPdf.test.tsx src/lib/correo/recibo.ts src/lib/correo/recibo.test.ts
@@ -290,7 +290,7 @@
 **Files:**
 - Modify: `docs/superpowers/plans/2026-09-05-descuento-pedidos.md` (marcar tareas verificadas y registrar comandos reales)
 
-- [ ] **Step 1: Ejecutar la suite unitaria, lint y tipado**
+- [x] **Step 1: Ejecutar la suite unitaria, lint y tipado**
 
   ```powershell
   & 'C:\Program Files\nodejs\node.exe' '.\node_modules\vitest\vitest.mjs' run --maxWorkers=1
@@ -302,7 +302,7 @@
   bloquearse en el host, registrar el bloqueo y no marcar su resultado como
   aprobado.
 
-- [ ] **Step 2: Ejecutar build con conectividad disponible**
+- [x] **Step 2: Ejecutar build con conectividad disponible**
 
   ```powershell
   & 'C:\Program Files\nodejs\node.exe' '.\node_modules\next\dist\bin\next' build
@@ -312,7 +312,7 @@
   red en el sandbox, ejecutar el mismo comando fuera del aislamiento y anotar
   esa condición.
 
-- [ ] **Step 3: Verificación manual controlada**
+- [x] **Step 3: Verificación manual controlada**
 
   Con Supabase local activo, crear un pedido con productos por `$44.000`,
   descuento `$4.000` y domicilio `$5.000`. Confirmar total `$45.000`,
@@ -321,7 +321,7 @@
   texto plano y el PDF muestran el mismo desglose. Repetir la creación con
   descuento `$0` y confirmar que no aparece la línea adicional.
 
-- [ ] **Step 4: Revisar el diff y cerrar**
+- [x] **Step 4: Revisar el diff y cerrar**
 
   ```powershell
   git diff HEAD~4..HEAD --check
@@ -338,6 +338,25 @@
   git add docs/superpowers/plans/2026-09-05-descuento-pedidos.md
   git commit -m "docs: registra verificación de descuentos"
   ```
+
+### Evidencia de verificación — 2026-09-05
+
+- Pruebas focales: 42 pruebas en 6 archivos, usando `--pool=vmThreads --maxWorkers=1`.
+- Suite unitaria: 163 pruebas en 22 archivos, usando
+  `vitest run --pool=vmThreads --maxWorkers=1 --reporter=dot`.
+- Lint y `tsc --noEmit`: sin diagnósticos.
+- Build de producción: `next build` completó fuera del aislamiento; generó
+  `.next/BUILD_ID` `Txre8jENp2ogf-LYK15Jx`.
+- Revisión: `git diff HEAD~4..HEAD --check` sin espacios inválidos y árbol
+  limpio antes de registrar este avance.
+- Prueba manual positiva: `PED-000004` creado con dos Vainillas, subtotal
+  `$44.000`, descuento `$4.000`, domicilio `$5.000` y total `$45.000`.
+  El recibo HTML mostró la línea de descuento entre subtotal y domicilio; el
+  PDF se descargó y la app confirmó el envío único del correo. El usuario
+  verificó que la prueba fue correcta.
+- Prueba manual con cero: `PED-000005` creado con descuento `$0`, subtotal
+  `$22.000`, domicilio `$8.000` y total `$30.000`. Su recibo persistido no
+  mostró la línea `Descuento`.
 
 ## Revisión del plan
 
