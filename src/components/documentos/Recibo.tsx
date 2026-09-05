@@ -78,6 +78,14 @@ export function Recibo({ pedido, ajustes }: { pedido: PedidoCompleto; ajustes: A
             {formatearPesos(pedido.subtotal)}
           </span>
         </div>
+        {pedido.descuento > 0 && (
+          <div>
+            <strong>Descuento:</strong>{' '}
+            <span className="inline-block w-20 text-right tabular-nums">
+              -{formatearPesos(pedido.descuento)}
+            </span>
+          </div>
+        )}
         <div>
           <strong>Valor Domicilio:</strong>{' '}
           <span className="inline-block w-20 text-right tabular-nums">

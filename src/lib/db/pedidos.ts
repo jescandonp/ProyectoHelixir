@@ -1,7 +1,7 @@
 'use server'
 
 import { crearClienteServidor, obtenerUsuarioActual } from './cliente-supabase'
-import { calcularTotales, calcularSubtotalItem } from '@/lib/pedidos/calculos'
+import { calcularTotales, calcularSubtotalItem, validarDescuento } from '@/lib/pedidos/calculos'
 import { validarParaConfirmar } from '@/lib/pedidos/validacion'
 import { puedeTransicionar } from '@/lib/pedidos/estados'
 import { obtenerAjustes } from './ajustes'
@@ -71,6 +71,8 @@ export async function crearBorrador(): Promise<string> {
 export async function guardarBorrador(id: string, borrador: DatosBorrador): Promise<void> {
   const supabase = await crearClienteServidor()
   const totales = calcularTotales(borrador.items, borrador.valorDomicilio, borrador.descuento)
+  const errorDescuento = validarDescuento(borrador.descuento, totales.subtotal)
+  if (errorDescuento) throw new Error(errorDescuento)
 
   const { error } = await supabase
     .from('pedidos')
@@ -145,6 +147,8 @@ export async function confirmarPedido(id: string): Promise<{ consecutivo: string
 
   const usuario = await obtenerUsuarioActual()
   const totales = calcularTotales(items, pedido.valor_domicilio, pedido.descuento)
+  const errorDescuento = validarDescuento(pedido.descuento, totales.subtotal)
+  if (errorDescuento) throw new Error(errorDescuento)
 
   // Se congela todo lo que va impreso: si mañana cambia la ficha del cliente,
   // este pedido sigue diciendo lo que decía el día que salió.

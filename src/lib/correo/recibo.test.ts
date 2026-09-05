@@ -42,4 +42,12 @@ describe('construirCorreoRecibo', () => {
     expect(() => construirCorreoRecibo({ ...pedido, clienteCorreo: null }, ajustes, pdf))
       .toThrow('Este cliente no tiene correo registrado')
   })
+
+  it('incluye el descuento positivo en el desglose del correo', () => {
+    const correo = construirCorreoRecibo(
+      { ...pedido, descuento: 4000, total: 236000 }, ajustes, pdf,
+    )
+
+    expect(correo.textoPlano).toContain('Descuento: -$ 4.000')
+  })
 })
