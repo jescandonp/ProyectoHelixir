@@ -44,7 +44,7 @@ export function Recibo({ pedido, ajustes }: { pedido: PedidoCompleto; ajustes: A
         </div>
       </div>
 
-      <div className="my-2 bg-black py-0.5 text-center text-[14.5px] font-extrabold text-white">
+      <div className="my-2 border border-black py-0.5 text-center text-[14.5px] font-extrabold">
         Detalle del Pedido
       </div>
 
@@ -94,7 +94,7 @@ export function Recibo({ pedido, ajustes }: { pedido: PedidoCompleto; ajustes: A
         </div>
       </div>
 
-      <div className="my-2 flex justify-between bg-black px-2 py-1 text-[17px] font-black text-white">
+      <div className="my-2 flex justify-between border border-black px-2 py-1 text-[17px] font-black">
         <span>TOTAL:</span>
         <span className="tabular-nums">{formatearPesos(pedido.total)}</span>
       </div>

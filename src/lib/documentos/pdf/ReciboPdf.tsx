@@ -17,15 +17,15 @@ const estilos = StyleSheet.create({
   filaDato: { flexDirection: 'row', marginBottom: 1 },
   etiquetaDato: { width: 50, fontWeight: 700 },
   encabezadoDetalle: {
-    backgroundColor: '#000000', color: '#ffffff', textAlign: 'center',
+    borderWidth: 1, borderColor: '#000000', color: '#000000', textAlign: 'center',
     paddingVertical: 2, fontWeight: 700, marginVertical: 6,
   },
   filaItem: { flexDirection: 'row', justifyContent: 'space-between' },
   separador: { marginVertical: 6, borderTopWidth: 1, borderTopColor: '#000000', borderStyle: 'dashed' },
   filaTotalParcial: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 2 },
   total: {
-    flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#000000',
-    color: '#ffffff', paddingHorizontal: 6, paddingVertical: 4, marginVertical: 6, fontSize: 11, fontWeight: 700,
+    flexDirection: 'row', justifyContent: 'space-between', borderWidth: 1, borderColor: '#000000',
+    color: '#000000', paddingHorizontal: 6, paddingVertical: 4, marginVertical: 6, fontSize: 11, fontWeight: 700,
   },
   cajaPago: { borderWidth: 1.5, borderColor: '#000000', padding: 6, textAlign: 'center', marginTop: 6 },
 })
